@@ -33,13 +33,11 @@ import Data.Maybe
 import Prelude hiding (minimum, maximum, null)
 import qualified Prelude as L (null)
 
-----------------------------------------------------------------
-
-
+{-@ type Nat = {v:Int | 0 <= v} @-}
 
 {-@ data Tree a =
     Node
-        { _rank :: Int
+        { _rank :: Nat
         , _root :: a
         , subtrees :: [BoundedTree a _root]
         }
@@ -52,20 +50,10 @@ data Tree a =
         , subtrees :: [Tree a]
         }
 
--- | Trees with value less than X
-{-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
-
-{-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> BoundedTree a y -> BoundedTree a x @-}
-boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
-boundedTreeTransitivityLemma x y tree = tree
-
-
 newtype Heap a = Heap [Tree a]
 
--- instance (Eq a, Ord a) => Eq (Heap a) where
---     h1 == h2 = heapSort h1 == heapSort h2
-
-----------------------------------------------------------------
+-- | Trees with value less than X
+{-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
 
 {-@ rank :: Tree a -> Int @-}
 rank (Node { _rank=r }) = r
@@ -76,14 +64,24 @@ root (Node { _root=x }) = x
 
 
 
-{-@ assert :: {v:Bool | v} -> a -> a @-}
-assert :: Bool -> a -> a
-assert _ x = x
-
 {-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> BoundedTree a (root t) @-}
 treeIsBoundedByItsRootLemma :: Tree a -> Tree a
 treeIsBoundedByItsRootLemma (Node {_rank=r, _root=x, subtrees=ts}) =
   Node {_rank=r, _root=x, subtrees=ts}
+
+{-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> BoundedTree a y -> BoundedTree a x @-}
+boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
+boundedTreeTransitivityLemma x y tree = tree
+
+
+-- instance (Eq a, Ord a) => Eq (Heap a) where
+--     h1 == h2 = heapSort h1 == heapSort h2
+
+----------------------------------------------------------------
+
+{-@ assert :: {v:Bool | v} -> a -> a @-}
+assert :: Bool -> a -> a
+assert _ x = x
 
 {-@ link :: Tree a -> Tree a -> Tree a @-}
 link t1@(Node {_rank=r1, _root=x1, subtrees=ts1}) t2@(Node {_rank=r2, _root=x2, subtrees=ts2})
@@ -96,65 +94,63 @@ link t1@(Node {_rank=r1, _root=x1, subtrees=ts1}) t2@(Node {_rank=r2, _root=x2, 
     let t1BoundedByX2 = boundedTreeTransitivityLemma x2 x1 t1BoundedByX1 in
       Node (r2+1) x2 (t1BoundedByX2:ts2)
 
-----------------------------------------------------------------
+{-@ empty :: Heap a @-}
+empty :: Heap a
+empty = Heap []
 
--- {-| Empty heap.
--- -}
+-- {-@ null :: h:(Heap a) -> {v:Bool | v <=> h == empty} @-}
+{-@ null :: h:(Heap a) -> Bool @-}
+null :: Heap a -> Bool
+null (Heap ts) = L.null ts
 
--- empty :: Heap a
--- empty = Heap []
+{-@ singleton :: a -> Heap a @-}
+singleton :: a -> Heap a
+singleton x = Heap [Node 0 x []]
 
--- {-|
--- See if the heap is empty.
+{-| Insertion. Worst-case: O(log N), amortized: O(1)
 
--- >>> Data.Heap.Binominal.null empty
--- True
--- >>> Data.Heap.Binominal.null (singleton 1)
--- False
--- -}
+Properties we would like to verify:
+  1. well-formed
+  2. increases length by 1
+  3. elements we would expect
+-}
 
--- null :: Heap a -> Bool
--- null (Heap ts) = L.null ts
+{-@ sumNat :: Nat -> Nat -> Nat @-}
+sumNat :: Int -> Int -> Int
+sumNat x y = x + y
 
--- {-| Singleton heap.
--- -}
+{-@ sumNatList :: [Nat] -> Nat @-}
+sumNatList :: [Int] -> Int
+sumNatList [] = 0
+sumNatList (x:xs) = sumNat x (sumNatList xs)
 
--- singleton :: a -> Heap a
--- singleton x = Heap [Node 0 x []]
+-- {-@ sizeOfTree :: t:(Tree a) -> Nat / [0] @-}
+-- sizeOfTree :: Tree a -> Int
+-- sizeOfTree (Node {subtrees=ts}) = sumNat 1 (sumNatList (map sizeOfTree ts))
 
--- ----------------------------------------------------------------
+-- {-@ sizeOfTrees :: [Tree a] -> {v:Int | 0 <= v} @-}
+-- sizeOfTrees :: [Tree a] -> Int
+-- sizeOfTrees ts = foldl' (\acc t -> acc + sizeOfTree t) 0 ts
 
--- {-| Insertion. Worst-case: O(log N), amortized: O(1)
+-- {-@ measure size @-}
+-- {-@ size :: Heap a -> {v:Int | 0 <= v} @-}
+-- size :: Heap a -> Int
+-- size (Heap ts) = sizeOfTrees ts
 
--- >>> insert 7 (fromList [5,3]) == fromList [3,5,7]
--- True
--- >>> insert 5 empty            == singleton 5
--- True
--- -}
+{-@ insert :: Ord a => a -> Heap a -> Heap a @-}
+insert :: Ord a => a -> Heap a -> Heap a
+insert x (Heap ts) = Heap (insert' (Node 0 x []) ts)
 
--- insert :: Ord a => a -> Heap a -> Heap a
--- insert x (Heap ts) = Heap (insert' (Node 0 x []) ts)
+{-@ insert' :: Ord a => Tree a -> [Tree a] -> [Tree a] @-}
+insert' :: Ord a => Tree a -> [Tree a] -> [Tree a]
+insert' t [] = [t]
+insert' t ts@(t':ts')
+  | rank t < rank t' = t : ts
+  | otherwise        = insert' (link t t') ts'
 
--- insert' :: Ord a => Tree a -> [Tree a] -> [Tree a]
--- insert' t [] = [t]
--- insert' t ts@(t':ts')
---   | rank t < rank t' = t : ts
---   | otherwise        = insert' (link t t') ts'
-
--- ----------------------------------------------------------------
-
--- {-| Creating a heap from a list.
-
--- >>> empty == fromList []
--- True
--- >>> singleton 'a' == fromList ['a']
--- True
--- >>> fromList [5,3] == fromList [5,3]
--- True
--- -}
-
--- fromList :: Ord a => [a] -> Heap a
--- fromList = foldl' (flip insert) empty
+{-@ fromList :: Ord a => [a] -> Heap a @-}
+fromList :: Ord a => [a] -> Heap a
+fromList = foldl' (flip insert) empty
 
 -- ----------------------------------------------------------------
 
@@ -167,10 +163,18 @@ link t1@(Node {_rank=r1, _root=x1, subtrees=ts1}) t2@(Node {_rank=r2, _root=x2, 
 -- []
 -- -}
 
+-- {-@ toList :: Ord a => Heap a -> [a] @-}
+-- toList :: Ord a => Heap a -> [a]
+-- toList h =
+--   case deleteMin2 h of
+--     Just (x, h) -> x : toList h
+--     Nothing -> []
+
+
 -- toList :: Heap a -> [a]
 -- toList (Heap ts) = concatMap toList' ts
 
--- toList' :: Tree a -> [a]
+-- {-@ toList' :: Tree a -> [a] @-}
 -- toList' (Node _ x []) = [x]
 -- toList' (Node _ x ts) = x : concatMap toList' ts
 
@@ -184,8 +188,9 @@ link t1@(Node {_rank=r1, _root=x1, subtrees=ts1}) t2@(Node {_rank=r2, _root=x2, 
 -- Nothing
 -- -}
 
--- minimum :: Ord a => Heap a -> Maybe a
--- minimum (Heap ts) = root . fst <$> deleteMin' ts
+{-@ minimum :: Ord a => Heap a -> Maybe a @-}
+minimum :: Ord a => Heap a -> Maybe a
+minimum (Heap ts) = root . fst <$> deleteMin' ts
 
 -- ----------------------------------------------------------------
 
@@ -197,41 +202,48 @@ link t1@(Node {_rank=r1, _root=x1, subtrees=ts1}) t2@(Node {_rank=r2, _root=x2, 
 -- True
 -- -}
 
--- deleteMin :: Ord a => Heap a -> Heap a
--- deleteMin (Heap ts) = case deleteMin' ts of
---     Nothing                  -> empty
---     Just (Node _ _ ts1, ts2) -> Heap (merge' (reverse ts1) ts2)
+{-@ deleteMin :: Ord a => Heap a -> Heap a @-}
+deleteMin :: Ord a => Heap a -> Heap a
+deleteMin (Heap ts) =
+  case deleteMin' ts of
+    Nothing                  -> empty
+    Just (Node _ _ ts1, ts2) -> Heap (merge' (reverse ts1) ts2)
 
--- deleteMin2 :: Ord a => Heap a -> Maybe (a, Heap a)
--- deleteMin2 (Heap []) = Nothing
--- deleteMin2 h         = (\m -> (m, deleteMin h)) <$> minimum h
+{-@ deleteMin2 :: Ord a => Heap a -> Maybe (a, Heap a) @-}
+deleteMin2 :: Ord a => Heap a -> Maybe (a, Heap a)
+deleteMin2 (Heap []) = Nothing
+deleteMin2 h         = (\m -> (m, deleteMin h)) <$> minimum h
 
--- deleteMin' :: Ord a => [Tree a] -> Maybe (Tree a, [Tree a])
--- deleteMin' []     = Nothing
--- deleteMin' [t]    = Just (t,[])
--- deleteMin' (t:ts)
---   | root t < root t' = Just (t,  ts)
---   | otherwise        = Just (t', t:ts')
---   where
---     Just (t',ts')    = deleteMin' ts
+{-@ deleteMin' :: Ord a => [Tree a] -> Maybe (Tree a, [Tree a]) @-}
+deleteMin' :: Ord a => [Tree a] -> Maybe (Tree a, [Tree a])
+deleteMin' [] = Nothing
+deleteMin' (t:ts) =
+  case deleteMin' ts of
+    Nothing -> Just (t, [])
+    Just (t', ts') ->
+      if root t < root t'
+      then Just (t, ts)
+      else Just (t', t:ts')
 
--- ----------------------------------------------------------------
--- {-| Merging two heaps. Worst-case: O(log N), amortized: O(log N)
+{-| Merging two heaps. Worst-case: O(log N), amortized: O(log N)
 
--- >>> merge (fromList [5,3]) (fromList [5,7]) == fromList [3,5,5,7]
--- True
--- -}
+Properties to verify
+1. well-formedness
+2. sum of counts of all elements from both should be in both
+-}
 
--- merge :: Ord a => Heap a -> Heap a -> Heap a
--- merge (Heap ts1) (Heap ts2) = Heap (merge' ts1 ts2)
+{-@ merge :: Ord a => Heap a -> Heap a -> Heap a @-}
+merge :: Ord a => Heap a -> Heap a -> Heap a
+merge (Heap ts1) (Heap ts2) = Heap (merge' ts1 ts2)
 
--- merge' :: Ord a => [Tree a] -> [Tree a] -> [Tree a]
--- merge' ts1 [] = ts1
--- merge' [] ts2 = ts2
--- merge' ts1@(t1:ts1') ts2@(t2:ts2')
---   | rank t1 < rank t2 = t1 : merge' ts1' ts2
---   | rank t2 < rank t1 = t2 : merge' ts1 ts2'
---   | otherwise         = insert' (link t1 t2) (merge' ts1' ts2')
+{-@ merge' :: Ord a => [Tree a] -> [Tree a] -> [Tree a] @-}
+merge' :: Ord a => [Tree a] -> [Tree a] -> [Tree a]
+merge' ts1 [] = ts1
+merge' [] ts2 = ts2
+merge' ts1@(t1:ts1') ts2@(t2:ts2')
+  | rank t1 < rank t2 = t1 : merge' ts1' ts2
+  | rank t2 < rank t1 = t2 : merge' ts1 ts2'
+  | otherwise         = insert' (link t1 t2) (merge' ts1' ts2')
 
 -- ----------------------------------------------------------------
 -- -- Basic operations
