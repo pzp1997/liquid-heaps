@@ -42,6 +42,13 @@ sumSizeList :: [Tree a] -> Int
 sumSizeList [] = 0
 sumSizeList (x:xs) = size x + sumSizeList xs
 
+{-@ measure heapSize @-}
+{-@ heapSize :: Heap a -> Nat @-}
+heapSize :: Heap a -> Int
+heapSize h =
+  case h of
+    Heap ts -> sumSizeList ts
+
 {-@ data Tree a =
     Node
         { rank :: Nat
@@ -59,20 +66,20 @@ data Tree a =
         , size :: Int
         }
 
-newtype Heap a = Heap [Tree a]
+data Heap a = Heap [Tree a]
 
 -- | Trees with value less than X
 {-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
 
-{-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> BoundedTree a (root t) @-}
+{-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> {v:BoundedTree a (root t) | size v == size t} @-}
 treeIsBoundedByItsRootLemma :: Tree a -> Tree a
 treeIsBoundedByItsRootLemma (Node {rank=r, root=x, subtrees=ts, size=sz}) =
   Node {rank=r, root=x, subtrees=ts, size=sz}
 
-{-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> BoundedTree a y -> BoundedTree a x @-}
+-- TODO double check if we need this lemma
+{-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> t:(BoundedTree a y) -> {v:BoundedTree a x | size v == size t} @-}
 boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
 boundedTreeTransitivityLemma x y tree = tree
-
 
 -- instance (Eq a, Ord a) => Eq (Heap a) where
 --     h1 == h2 = heapSort h1 == heapSort h2
@@ -84,7 +91,7 @@ assert :: Bool -> a -> a
 assert _ x = x
 
 -- TODO add size to link's refinement type
-{-@ link :: Tree a -> Tree a -> Tree a @-}
+{-@ link :: t1:(Tree a) -> t2:(Tree a) -> {v:Tree a | size v == size t1 + size t2} @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
 link t1@(Node {rank=r1, root=x1, subtrees=ts1, size=sz1}) t2@(Node {rank=r2, root=x2, subtrees=ts2, size=sz2})
   | x1 <= x2  =
@@ -96,16 +103,16 @@ link t1@(Node {rank=r1, root=x1, subtrees=ts1, size=sz1}) t2@(Node {rank=r2, roo
     let t1BoundedByX2 = boundedTreeTransitivityLemma x2 x1 t1BoundedByX1 in
     Node (r2+1) x2 (t1BoundedByX2:ts2) (sz1 + sz2)
 
-{-@ empty :: Heap a @-}
+{-@ empty :: {v:Heap a | heapSize v == 0} @-}
 empty :: Heap a
 empty = Heap []
 
 -- {-@ null :: h:(Heap a) -> {v:Bool | v <=> h == empty} @-}
-{-@ null :: h:(Heap a) -> Bool @-}
+{-@ null :: h:(Heap a) -> {v:Bool | v <=> heapSize h == 0} @-}
 null :: Heap a -> Bool
-null (Heap ts) = L.null ts
+null h = heapSize h == 0
 
-{-@ singleton :: a -> Heap a @-}
+{-@ singleton :: a -> {v:Heap a | heapSize v == 1} @-}
 singleton :: a -> Heap a
 singleton x = Heap [Node 0 x [] 1]
 
@@ -117,42 +124,27 @@ Properties we would like to verify:
   3. elements we would expect
 -}
 
-{-@ sumNat :: Nat -> Nat -> Nat @-}
-sumNat :: Int -> Int -> Int
-sumNat x y = x + y
-
-{-@ sumNatList :: [Nat] -> Nat @-}
-sumNatList :: [Int] -> Int
-sumNatList [] = 0
-sumNatList (x:xs) = sumNat x (sumNatList xs)
-
--- {-@ sizeOfTree :: t:(Tree a) -> Nat / [0] @-}
--- sizeOfTree :: Tree a -> Int
--- sizeOfTree (Node {subtrees=ts}) = sumNat 1 (sumNatList (map sizeOfTree ts))
-
--- {-@ sizeOfTrees :: [Tree a] -> {v:Int | 0 <= v} @-}
--- sizeOfTrees :: [Tree a] -> Int
--- sizeOfTrees ts = foldl' (\acc t -> acc + sizeOfTree t) 0 ts
-
--- {-@ measure size @-}
--- {-@ size :: Heap a -> {v:Int | 0 <= v} @-}
--- size :: Heap a -> Int
--- size (Heap ts) = sizeOfTrees ts
-
-{-@ insert :: Ord a => a -> Heap a -> Heap a @-}
+{-@ insert :: Ord a => a -> h:(Heap a) -> {v:Heap a | 1 + heapSize h == heapSize v } @-}
 insert :: Ord a => a -> Heap a -> Heap a
 insert x (Heap ts) = Heap (insert' (Node 0 x [] 1) ts)
 
-{-@ insert' :: Ord a => Tree a -> [Tree a] -> [Tree a] @-}
+{-@ insert' :: Ord a => t:(Tree a) -> ts:([Tree a]) -> {v:[Tree a] | sumSizeList v == size t + sumSizeList ts } @-}
 insert' :: Ord a => Tree a -> [Tree a] -> [Tree a]
 insert' t [] = [t]
 insert' t ts@(t':ts')
   | rank t < rank t' = t : ts
   | otherwise        = insert' (link t t') ts'
 
-{-@ fromList :: Ord a => [a] -> Heap a @-}
+{-@ measure len @-}
+{-@ len :: [a] -> Nat @-}
+len :: [a] -> Int
+len [] = 0
+len (_:xs) = 1 + len xs
+
+{-@ fromList :: Ord a => xs:[a] -> {v:Heap a | heapSize v == len xs} @-}
 fromList :: Ord a => [a] -> Heap a
-fromList = foldl' (flip insert) empty
+fromList [] = empty
+fromList (x:xs) = insert x (fromList xs)
 
 -- ----------------------------------------------------------------
 
@@ -234,11 +226,11 @@ Properties to verify
 2. sum of counts of all elements from both should be in both
 -}
 
-{-@ merge :: Ord a => Heap a -> Heap a -> Heap a @-}
+{-@ merge :: Ord a => h1:(Heap a) -> h2:(Heap a) -> {v:(Heap a) | heapSize v == heapSize h1 + heapSize h2} @-}
 merge :: Ord a => Heap a -> Heap a -> Heap a
 merge (Heap ts1) (Heap ts2) = Heap (merge' ts1 ts2)
 
-{-@ merge' :: Ord a => [Tree a] -> [Tree a] -> [Tree a] @-}
+{-@ merge' :: Ord a => ts1:[Tree a] -> ts2:[Tree a] -> {v:[Tree a] | sumSizeList v == sumSizeList ts1 + sumSizeList ts2} @-}
 merge' :: Ord a => [Tree a] -> [Tree a] -> [Tree a]
 merge' ts1 [] = ts1
 merge' [] ts2 = ts2

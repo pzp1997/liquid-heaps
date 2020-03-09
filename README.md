@@ -14,3 +14,6 @@ Avoid partial functions
 Specialize things you want to use as measures
 Lift as much to the type level as possible
 Don't worry about using parts of definitions before they're defined
+Use `assert` to figure out what the SMT solver has already inferred
+Don't use newtype ever
+Sometimes explicit recursion is better than fold, e.g. fromList
