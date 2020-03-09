@@ -66,7 +66,10 @@ data Tree a =
         , size :: Int
         }
 
-data Heap a = Heap [Tree a]
+{-@ data Heap a = Heap { unheap :: [Tree a] } @-}
+data Heap a = Heap { unheap :: [Tree a] }
+
+{-@ type NEHeap a = {h:Heap a | 0 < heapSize h} @-}
 
 -- | Trees with value less than X
 {-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
@@ -182,9 +185,9 @@ fromList (x:xs) = insert x (fromList xs)
 -- Nothing
 -- -}
 
-{-@ minimum :: Ord a => Heap a -> Maybe a @-}
-minimum :: Ord a => Heap a -> Maybe a
-minimum (Heap ts) = root . fst <$> deleteMin' ts
+{-@ minimum :: NEHeap a -> a @-}
+minimum :: Ord a => Heap a -> a
+minimum = root . fst . deleteMin' . unheapNonempty
 
 -- ----------------------------------------------------------------
 
@@ -196,28 +199,37 @@ minimum (Heap ts) = root . fst <$> deleteMin' ts
 -- True
 -- -}
 
-{-@ deleteMin :: Ord a => Heap a -> Heap a @-}
+{-@ reverseHeapList :: xs:[Tree a] -> {v:[Tree a] | sumSizeList v == sumSizeList xs} @-}
+reverseHeapList :: [Tree a] -> [Tree a]
+reverseHeapList xs = reverseHeapListAux xs []
+
+{-@ reverseHeapListAux :: xs:[Tree a] -> acc:[Tree a] -> {v:[Tree a] | sumSizeList v == sumSizeList xs + sumSizeList acc} @-}
+reverseHeapListAux :: [Tree a] -> [Tree a] -> [Tree a]
+reverseHeapListAux [] acc = acc
+reverseHeapListAux (x:xs) acc = reverseHeapListAux xs (x:acc)
+
+{-@ unheapNonempty :: h:(NEHeap a) -> {v:[Tree a] | 0 < len v && sumSizeList v == heapSize h} @-}
+unheapNonempty :: Heap a -> [Tree a]
+unheapNonempty (Heap ts@(_:_)) = ts
+
+{-@ deleteMin :: h:(NEHeap a) -> {v:Heap a | 1 + heapSize v == heapSize h} @-}
 deleteMin :: Ord a => Heap a -> Heap a
-deleteMin (Heap ts) =
-  case deleteMin' ts of
-    Nothing                  -> empty
-    Just (Node _ _ ts1 _, ts2) -> Heap (merge' (reverse ts1) ts2)
+deleteMin h =
+  let (Node _ _ ts1 _, ts2) = deleteMin' (unheapNonempty h) in
+  Heap (merge' (reverseHeapList ts1) ts2)
 
-{-@ deleteMin2 :: Ord a => Heap a -> Maybe (a, Heap a) @-}
-deleteMin2 :: Ord a => Heap a -> Maybe (a, Heap a)
-deleteMin2 (Heap []) = Nothing
-deleteMin2 h         = (\m -> (m, deleteMin h)) <$> minimum h
+{-@ deleteMin2 :: h:NEHeap a -> {v:(a, Heap a) | 1 + heapSize (snd v) == heapSize h} @-}
+deleteMin2 :: Ord a => Heap a -> (a, Heap a)
+deleteMin2 h         = (minimum h, deleteMin h)
 
-{-@ deleteMin' :: Ord a => [Tree a] -> Maybe (Tree a, [Tree a]) @-}
-deleteMin' :: Ord a => [Tree a] -> Maybe (Tree a, [Tree a])
-deleteMin' [] = Nothing
+{-@ deleteMin' :: {xs:[Tree a] | 0 < len xs} -> {v:(Tree a, [Tree a]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
+deleteMin' :: Ord a => [Tree a] -> (Tree a, [Tree a])
+deleteMin' [t] = (t, [])
 deleteMin' (t:ts) =
-  case deleteMin' ts of
-    Nothing -> Just (t, [])
-    Just (t', ts') ->
-      if root t < root t'
-      then Just (t, ts)
-      else Just (t', t:ts')
+  let (t', ts') = deleteMin' ts in
+  if root t < root t'
+  then (t, ts)
+  else (t', t:ts')
 
 {-| Merging two heaps. Worst-case: O(log N), amortized: O(log N)
 
