@@ -21,3 +21,31 @@ Sometimes explicit recursion is better than fold, e.g. fromList
 
 ## Interesting things
 Tail recursive version of `reverseHeapList` was easier to verify
+
+
+## Examples of effective assertion usage
+
+{-@ deleteMin' :: {xs:[Tree a] | 0 < len xs} -> {v:(Tree a, [BoundedTree a (root (fst v))]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
+-- {-@ deleteMin' :: {xs:[Tree a] | 0 < len xs} -> {v:(Tree a, [Tree a]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
+deleteMin' :: Ord a => [Tree a] -> (Tree a, [Tree a])
+deleteMin' [t] = (t, [])
+deleteMin' (t:ts) =
+  let acc = deleteMin' ts in
+  let t' = fst acc in
+  let ts' = snd acc in
+  let x' = root t' in
+  let x = root t in
+  let tBounded' = treeIsBoundedByItsRootLemma t' in
+  if x < x'
+  then (
+    let tBoundedByX = boundedTreeTransitivityLemma x x' tBounded' in
+    let tsBoundedByX = boundedTreeListTransitivityLemma x x' ts' in
+    let vSnd = tBoundedByX : tsBoundedByX in
+    -- assertBoundedTree x' tBounded' $
+    -- assertBoundedTree x tBoundedByX $
+    -- assertBoundedTreeList x' ts' $
+    -- assertBoundedTreeList x tsBoundedByX $
+    assertBoundedTreeList x vSnd $
+    (t, vSnd)
+  )
+  else (t', t:ts')

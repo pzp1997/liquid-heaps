@@ -84,6 +84,10 @@ treeIsBoundedByItsRootLemma (Node {rank=r, root=x, subtrees=ts, size=sz}) =
 boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
 boundedTreeTransitivityLemma x y tree = tree
 
+{-@ boundedTreeListTransitivityLemma :: x:a -> {y:a | x <= y} -> ts:[BoundedTree a y] -> {v:[BoundedTree a x] | sumSizeList v == sumSizeList ts} @-}
+boundedTreeListTransitivityLemma :: a -> a -> [Tree a] -> [Tree a]
+boundedTreeListTransitivityLemma x y ts = ts
+
 -- instance (Eq a, Ord a) => Eq (Heap a) where
 --     h1 == h2 = heapSort h1 == heapSort h2
 
@@ -216,16 +220,40 @@ deleteMin h =
 
 {-@ deleteMin2 :: h:NEHeap a -> {v:(a, Heap a) | 1 + heapSize (snd v) == heapSize h} @-}
 deleteMin2 :: Ord a => Heap a -> (a, Heap a)
-deleteMin2 h         = (minimum h, deleteMin h)
+deleteMin2 h = (minimum h, deleteMin h)
 
-{-@ deleteMin' :: {xs:[Tree a] | 0 < len xs} -> {v:(Tree a, [Tree a]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
+{-@ deleteMin' :: {xs:[Tree a] | 0 < len xs} -> {v:(Tree a, [BoundedTree a (root (fst v))]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
+-- {-@ deleteMin' :: {xs:[Tree a] | 0 < len xs} -> {v:(Tree a, [Tree a]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
 deleteMin' :: Ord a => [Tree a] -> (Tree a, [Tree a])
 deleteMin' [t] = (t, [])
 deleteMin' (t:ts) =
-  let (t', ts') = deleteMin' ts in
-  if root t < root t'
-  then (t, ts)
-  else (t', t:ts')
+  let acc = deleteMin' ts in
+  let t' = fst acc in
+  let ts' = snd acc in
+  let x' = root t' in
+  let x = root t in
+  let tBounded = treeIsBoundedByItsRootLemma t in
+  let tBounded' = treeIsBoundedByItsRootLemma t' in
+  if x < x'
+  then (
+    let tBoundedByX = boundedTreeTransitivityLemma x x' tBounded' in
+    let tsBoundedByX = boundedTreeListTransitivityLemma x x' ts' in
+    (t, tBoundedByX : tsBoundedByX)
+  )
+  else (
+    let tBoundedByX' = boundedTreeTransitivityLemma x' x tBounded in
+    (t', tBoundedByX' : ts')
+  )
+
+{-@ assertBoundedTree :: x:a -> BoundedTree a x -> b -> b @-}
+assertBoundedTree :: a -> Tree a -> b -> b
+assertBoundedTree _ _ x = x
+
+{-@ assertBoundedTreeList :: x:a -> [BoundedTree a x] -> b -> b @-}
+assertBoundedTreeList :: a -> [Tree a] -> b -> b
+assertBoundedTreeList _ _ x = x
+
+-- {-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> t:(BoundedTree a y) -> {v:BoundedTree a x | size v == size t} @-}
 
 {-| Merging two heaps. Worst-case: O(log N), amortized: O(log N)
 
