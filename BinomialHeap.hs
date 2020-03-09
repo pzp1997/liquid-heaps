@@ -37,16 +37,16 @@ import qualified Prelude as L (null)
 
 {-@ data Tree a =
     Node
-        { _rank :: Nat
-        , _root :: a
-        , subtrees :: [BoundedTree a _root]
+        { rank :: Nat
+        , root :: a
+        , subtrees :: [BoundedTree a root]
         }
 @-}
 
 data Tree a =
     Node
-        { _rank :: Int
-        , _root :: a
+        { rank :: Int
+        , root :: a
         , subtrees :: [Tree a]
         }
 
@@ -55,19 +55,10 @@ newtype Heap a = Heap [Tree a]
 -- | Trees with value less than X
 {-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
 
-{-@ rank :: Tree a -> Int @-}
-rank (Node { _rank=r }) = r
-
-{-@ measure root @-}
-{-@ root :: Tree a -> a @-}
-root (Node { _root=x }) = x
-
-
-
 {-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> BoundedTree a (root t) @-}
 treeIsBoundedByItsRootLemma :: Tree a -> Tree a
-treeIsBoundedByItsRootLemma (Node {_rank=r, _root=x, subtrees=ts}) =
-  Node {_rank=r, _root=x, subtrees=ts}
+treeIsBoundedByItsRootLemma (Node {rank=r, root=x, subtrees=ts}) =
+  Node {rank=r, root=x, subtrees=ts}
 
 {-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> BoundedTree a y -> BoundedTree a x @-}
 boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
@@ -84,7 +75,7 @@ assert :: Bool -> a -> a
 assert _ x = x
 
 {-@ link :: Tree a -> Tree a -> Tree a @-}
-link t1@(Node {_rank=r1, _root=x1, subtrees=ts1}) t2@(Node {_rank=r2, _root=x2, subtrees=ts2})
+link t1@(Node {rank=r1, root=x1, subtrees=ts1}) t2@(Node {rank=r2, root=x2, subtrees=ts2})
   | x1 <= x2  =
     let t2BoundedByX2 = treeIsBoundedByItsRootLemma t2 in
     let t2BoundedByX1 = boundedTreeTransitivityLemma x1 x2 t2BoundedByX2 in
