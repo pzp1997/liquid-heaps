@@ -35,8 +35,6 @@ import qualified Prelude as L (null)
 
 ----------------------------------------------------------------
 
-
-
 {-@ data Tree a =
     Node
         { _rank :: Int
@@ -55,11 +53,21 @@ data Tree a =
 -- | Trees with value less than X
 {-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
 
+{-@ rank :: Tree a -> Int @-}
+rank (Node { _rank=r }) = r
+
+{-@ measure root @-}
+{-@ root :: Tree a -> a @-}
+root (Node { _root=x }) = x
+
+{-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> BoundedTree a (root t) @-}
+treeIsBoundedByItsRootLemma :: Tree a -> Tree a
+treeIsBoundedByItsRootLemma (Node {_rank=r, _root=x, subtrees=ts}) =
+  Node {_rank=r, _root=x, subtrees=ts}
 
 {-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> BoundedTree a y -> BoundedTree a x @-}
 boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
 boundedTreeTransitivityLemma x y tree = tree
-
 
 newtype Heap a = Heap [Tree a]
 
@@ -68,61 +76,20 @@ newtype Heap a = Heap [Tree a]
 
 ----------------------------------------------------------------
 
-{-@ rank :: Tree a -> Int @-}
-rank (Node { _rank=r }) = r
-
-{-@ root :: Tree a -> a @-}
-root (Node { _root=x }) = x
-
-{-@ measure root @-}
-
--- {-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> BoundedTree a (root t) @-}
--- treeIsBoundedByItsRootLemma :: Tree a -> Tree a
--- treeIsBoundedByItsRootLemma tree = tree
-
-
 {-@ assert :: {v:Bool | v} -> a -> a @-}
 assert :: Bool -> a -> a
 assert _ x = x
 
--- {-@ isBoundedTree :: Ord a => x:a -> BoundedTree a x -> b -> b @-}
--- isBoundedTree :: Ord a => a -> Tree a -> b -> b
--- isBoundedTree root tree z = z
-
--- {-@ isBoundedTree :: x:a -> Tree {v:a | x <= v} -> BoundedTree a x @-}
--- isBoundedTree :: a -> Tree a -> Tree a
--- isBoundedTree root tree@(Node {_rank=r, _root=x, subtrees=ts}) =
---     case ts of
---         [] -> Node r x []
---         _ -> Node r x ts
-
-
-{-@ isBoundedTree :: Tree {v:a | x <= v} -> BoundedTree a x @-}
-isBoundedTree :: Tree a -> Tree a
-isBoundedTree root tree@(Node {_rank=r, _root=x, subtrees=ts}) =
-    case ts of
-        [] -> Node r x []
-        _ -> Node r x ts
-
--- x1 <= x2 -> BoundedTree a x2 -> BoundedTree a x1
-
-{-@ link :: Ord a => Tree a -> Tree a -> Tree a @-}
+{-@ link :: Tree a -> Tree a -> Tree a @-}
 link t1@(Node {_rank=r1, _root=x1, subtrees=ts1}) t2@(Node {_rank=r2, _root=x2, subtrees=ts2})
   | x1 <= x2  =
-    --   assert (x1 <= x2) $
-    --    isBoundedTree x1 ts1 $
-    --    isBoundedTree x2 ts2 $
-        let t2Bounded = boundedTreeTransitivityLemma x1 x2 (isBoundedTree x2 t2) in
-        Node (r1+1) x1 (t2Bounded:ts1)
-    --    isBoundedTree x2 t2 $
-                -- x1 <= x2
-                -- \forall v \in ts1, x1 <= v
-                -- \forall v \in ts2, x2 <= v
-                -- Goal: \forall v \in ts2, x1 <= v
-
-
-
-  | otherwise = Node (r2+1) x2 (t1:ts2)
+    let t2BoundedByX2 = treeIsBoundedByItsRootLemma t2 in
+    let t2BoundedByX1 = boundedTreeTransitivityLemma x1 x2 t2BoundedByX2 in
+    Node (r1+1) x1 (t2BoundedByX1:ts1)
+  | otherwise =
+    let t1BoundedByX1 = treeIsBoundedByItsRootLemma t1 in
+    let t1BoundedByX2 = boundedTreeTransitivityLemma x2 x1 t1BoundedByX1 in
+      Node (r2+1) x2 (t1BoundedByX2:ts2)
 
 ----------------------------------------------------------------
 

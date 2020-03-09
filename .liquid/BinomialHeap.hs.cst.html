@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
-<title>BinomialHeap.hs</title>
+<title>/Users/palmerpa/cis673-proj/BinomialHeap.hs</title>
 </head>
 <head>
 <link type='text/css' rel='stylesheet' href='liquid.css' />
@@ -10,11 +10,11 @@
 <body>
 <hr>
 Put mouse over identifiers to see inferred types
-<pre><span class=hs-linenum>  1: </span><span class='hs-comment'>{-|
+<pre><span class=hs-linenum>  1: </span><a class=annot href="#"><span class=annottext>{VV##1269 : GHC.Types.Module^"lq_tmp$x##1271" | $k_##1270}</span><span class='hs-comment'>{-|
   Binominal Heap
 
   - Purely Functional Data Structures
--}</span>
+-}</span></a>
 <span class=hs-linenum>  6: </span>
 <span class=hs-linenum>  7: </span><span class='hs-keyword'>module</span> <span class='hs-conid'>Data.Heap.Binominal</span> <span class='hs-keyword'>where</span>
 <span class=hs-linenum>  8: </span><span class='hs-comment'>-- (</span>
@@ -52,236 +52,266 @@ Put mouse over identifiers to see inferred types
 <span class=hs-linenum> 40: </span><span class='hs-keyword'>{-@</span> <span class='hs-keyword'>data</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>=</span>
 <span class=hs-linenum> 41: </span>    <span class='hs-conid'>Node</span>
 <span class=hs-linenum> 42: </span>        <span class='hs-layout'>{</span> <span class='hs-sel'>_rank</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Int</span>
-<span class=hs-linenum> 43: </span>        <span class='hs-layout'>,</span> <span class='hs-sel'>_root</span> <span class='hs-keyglyph'>::</span> <span class='hs-layout'>{</span><span class='hs-varid'>v</span><span class='hs-conop'>:</span><span class='hs-varid'>a</span> <span class='hs-keyglyph'>|</span> <span class='hs-sel'>_root</span> <span class='hs-varop'>&lt;=</span> <span class='hs-varid'>v</span><span class='hs-layout'>}</span>
+<span class=hs-linenum> 43: </span>        <span class='hs-layout'>,</span> <span class='hs-sel'>_root</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>a</span>
 <span class=hs-linenum> 44: </span>        <span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>BoundedTree</span> <span class='hs-varid'>a</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>]</span>
 <span class=hs-linenum> 45: </span>        <span class='hs-layout'>}</span>
 <span class=hs-linenum> 46: </span><span class='hs-keyword'>@-}</span>
 <span class=hs-linenum> 47: </span>
 <span class=hs-linenum> 48: </span><span class='hs-keyword'>data</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>=</span>
-<span class=hs-linenum> 49: </span>    <span class=hs-error><span class='hs-conid'>Node</span></span><span class=hs-error>
-</span><span class=hs-linenum> 50: </span>        <span class=hs-error><span class='hs-layout'>{</span></span> <span class='hs-sel'>_rank</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Int</span>
-<span class=hs-linenum> 51: </span>        <span class=hs-error><span class='hs-layout'>,</span></span> <span class='hs-sel'>_root</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>a</span>
-<span class=hs-linenum> 52: </span>        <span class=hs-error><span class='hs-layout'>,</span></span> <span class='hs-varid'>subtrees</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span><span class='hs-keyglyph'>]</span>
-<span class=hs-linenum> 53: </span>        <span class=hs-error><span class='hs-layout'>}</span></span>
+<span class=hs-linenum> 49: </span>    <span class='hs-conid'>Node</span>
+<span class=hs-linenum> 50: </span>        <span class='hs-layout'>{</span> <span class='hs-sel'>_rank</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Int</span>
+<span class=hs-linenum> 51: </span>        <span class='hs-layout'>,</span> <span class='hs-sel'>_root</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>a</span>
+<span class=hs-linenum> 52: </span>        <span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span><span class='hs-keyglyph'>]</span>
+<span class=hs-linenum> 53: </span>        <span class='hs-layout'>}</span>
 <span class=hs-linenum> 54: </span>
 <span class=hs-linenum> 55: </span><span class='hs-comment'>-- | Trees with value less than X</span>
 <span class=hs-linenum> 56: </span><span class='hs-keyword'>{-@</span> <span class='hs-keyword'>type</span> <span class='hs-conid'>BoundedTree</span> <span class='hs-varid'>a</span> <span class='hs-conid'>X</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Tree</span> <span class='hs-layout'>{</span><span class='hs-varid'>v</span><span class='hs-conop'>:</span><span class='hs-varid'>a</span> <span class='hs-keyglyph'>|</span> <span class='hs-conid'>X</span> <span class='hs-varop'>&lt;=</span> <span class='hs-varid'>v</span><span class='hs-layout'>}</span> <span class='hs-keyword'>@-}</span>
 <span class=hs-linenum> 57: </span>
-<span class=hs-linenum> 58: </span>
-<span class=hs-linenum> 59: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>boundedTreeTransitivityLemma</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>x</span><span class='hs-conop'>:</span><span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-keyword'>{y:</span><span class='hs-definition'>a</span> <span class='hs-keyword'>| x &lt;= y}</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>BoundedTree</span> <span class='hs-varid'>a</span> <span class='hs-varid'>y</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>BoundedTree</span> <span class='hs-varid'>a</span> <span class='hs-varid'>x</span> <span class='hs-keyword'>@-}</span>
-<span class=hs-linenum> 60: </span><span class='hs-definition'>boundedTreeTransitivityLemma</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span>
-<span class=hs-linenum> 61: </span><span class='hs-definition'>boundedTreeTransitivityLemma</span> <span class='hs-varid'>x</span> <span class='hs-varid'>y</span> <span class='hs-varid'>tree</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>tree</span>
+<span class=hs-linenum> 58: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>boundedTreeTransitivityLemma</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>x</span><span class='hs-conop'>:</span><span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-keyword'>{y:</span><span class='hs-definition'>a</span> <span class='hs-keyword'>| x &lt;= y}</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>BoundedTree</span> <span class='hs-varid'>a</span> <span class='hs-varid'>y</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>BoundedTree</span> <span class='hs-varid'>a</span> <span class='hs-varid'>x</span> <span class='hs-keyword'>@-}</span>
+<span class=hs-linenum> 59: </span><span class='hs-definition'>boundedTreeTransitivityLemma</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span>
+<span class=hs-linenum> 60: </span><a class=annot href="#"><span class=annottext>forall a .
+lq_tmp$x##648:a -&gt; lq_tmp$x##649:{VV : a | lq_tmp$x##648 &lt;= VV} -&gt; lq_tmp$x##650:(Data.Heap.Binominal.Tree {VV : a | lq_tmp$x##649 &lt;= VV}) -&gt; (Data.Heap.Binominal.Tree {VV : a | lq_tmp$x##648 &lt;= VV})</span><span class='hs-definition'>boundedTreeTransitivityLemma</span></a> <a class=annot href="#"><span class=annottext>a</span><span class='hs-varid'>x</span></a> <a class=annot href="#"><span class=annottext>{VV : a | x##a13F &lt;= VV}</span><span class='hs-varid'>y</span></a> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {VV : a | y##a13G &lt;= VV})</span><span class='hs-varid'>tree</span></a> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>tree</span>
+<span class=hs-linenum> 61: </span>
 <span class=hs-linenum> 62: </span>
-<span class=hs-linenum> 63: </span>
-<span class=hs-linenum> 64: </span><span class='hs-keyword'>newtype</span> <span class='hs-conid'>Heap</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Heap</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span><span class='hs-keyglyph'>]</span>
-<span class=hs-linenum> 65: </span>
-<span class=hs-linenum> 66: </span><span class='hs-comment'>-- instance (Eq a, Ord a) =&gt; Eq (Heap a) where</span>
-<span class=hs-linenum> 67: </span><span class='hs-comment'>--     h1 == h2 = heapSort h1 == heapSort h2</span>
-<span class=hs-linenum> 68: </span>
-<span class=hs-linenum> 69: </span><span class='hs-comment'>----------------------------------------------------------------</span>
-<span class=hs-linenum> 70: </span>
-<span class=hs-linenum> 71: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>rank</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Int</span> <span class='hs-keyword'>@-}</span>
-<span class=hs-linenum> 72: </span><span class='hs-definition'>rank</span> <span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span> <span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>r</span> <span class='hs-layout'>}</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>r</span>
-<span class=hs-linenum> 73: </span>
+<span class=hs-linenum> 63: </span><span class='hs-keyword'>newtype</span> <span class='hs-conid'>Heap</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Heap</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span><span class='hs-keyglyph'>]</span>
+<span class=hs-linenum> 64: </span>
+<span class=hs-linenum> 65: </span><span class='hs-comment'>-- instance (Eq a, Ord a) =&gt; Eq (Heap a) where</span>
+<span class=hs-linenum> 66: </span><span class='hs-comment'>--     h1 == h2 = heapSort h1 == heapSort h2</span>
+<span class=hs-linenum> 67: </span>
+<span class=hs-linenum> 68: </span><span class='hs-comment'>----------------------------------------------------------------</span>
+<span class=hs-linenum> 69: </span>
+<span class=hs-linenum> 70: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>rank</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Int</span> <span class='hs-keyword'>@-}</span>
+<span class=hs-linenum> 71: </span><a class=annot href="#"><span class=annottext>forall a .
+lq_tmp$x##675:(Data.Heap.Binominal.Tree a) -&gt; GHC.Types.Int</span><span class='hs-definition'>rank</span></a> <span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span> <span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>r</span> <span class='hs-layout'>}</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>{lq_tmp$x##718 : GHC.Types.Int | lq_tmp$x##718 == ds_d2ry}</span><span class='hs-varid'>r</span></a>
+<span class=hs-linenum> 72: </span>
+<span class=hs-linenum> 73: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>measure</span> <span class='hs-varid'>root</span> <span class='hs-keyword'>@-}</span>
 <span class=hs-linenum> 74: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>root</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyword'>@-}</span>
-<span class=hs-linenum> 75: </span><span class='hs-definition'>root</span> <span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>x</span> <span class='hs-layout'>}</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>x</span>
+<span class=hs-linenum> 75: </span><a class=annot href="#"><span class=annottext>forall a .
+lq_tmp$x##723:(Data.Heap.Binominal.Tree a) -&gt; {VV : a | VV == Data.Heap.Binominal.root lq_tmp$x##723}</span><span class='hs-definition'>root</span></a> <span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>x</span> <span class='hs-layout'>}</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>{lq_tmp$x##766 : a | lq_tmp$x##766 == ds_d2ro}</span><span class='hs-varid'>x</span></a>
 <span class=hs-linenum> 76: </span>
-<span class=hs-linenum> 77: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>measure</span> <span class='hs-varid'>root</span> <span class='hs-keyword'>@-}</span>
+<span class=hs-linenum> 77: </span>
 <span class=hs-linenum> 78: </span>
-<span class=hs-linenum> 79: </span><span class='hs-comment'>-- {-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -&gt; BoundedTree a (root t) @-}</span>
-<span class=hs-linenum> 80: </span><span class='hs-comment'>-- treeIsBoundedByItsRootLemma :: Tree a -&gt; Tree a</span>
-<span class=hs-linenum> 81: </span><span class='hs-comment'>-- treeIsBoundedByItsRootLemma tree = tree</span>
+<span class=hs-linenum> 79: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>assert</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyword'>{v:</span><span class='hs-conid'>Bool</span> <span class='hs-keyword'>| v}</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyword'>@-}</span>
+<span class=hs-linenum> 80: </span><span class='hs-definition'>assert</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Bool</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span>
+<span class=hs-linenum> 81: </span><a class=annot href="#"><span class=annottext>forall a .
+lq_tmp$x##771:{v : GHC.Types.Bool | v} -&gt; lq_tmp$x##772:a -&gt; a</span><span class='hs-definition'>assert</span></a> <span class='hs-keyword'>_</span> <a class=annot href="#"><span class=annottext>a</span><span class='hs-varid'>x</span></a> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>x</span>
 <span class=hs-linenum> 82: </span>
-<span class=hs-linenum> 83: </span>
-<span class=hs-linenum> 84: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>assert</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyword'>{v:</span><span class='hs-conid'>Bool</span> <span class='hs-keyword'>| v}</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyword'>@-}</span>
-<span class=hs-linenum> 85: </span><span class='hs-definition'>assert</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Bool</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>a</span>
-<span class=hs-linenum> 86: </span><span class='hs-definition'>assert</span> <span class='hs-keyword'>_</span> <span class='hs-varid'>x</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>x</span>
+<span class=hs-linenum> 83: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>treeIsBoundedByItsRootLemma</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>t</span><span class='hs-conop'>:</span><span class='hs-layout'>(</span><span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>BoundedTree</span> <span class='hs-varid'>a</span> <span class='hs-layout'>(</span><span class='hs-varid'>root</span> <span class='hs-varid'>t</span><span class='hs-layout'>)</span> <span class='hs-keyword'>@-}</span>
+<span class=hs-linenum> 84: </span><span class='hs-definition'>treeIsBoundedByItsRootLemma</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span>
+<span class=hs-linenum> 85: </span><a class=annot href="#"><span class=annottext>forall a .
+lq_tmp$x##783:(Data.Heap.Binominal.Tree a) -&gt; (Data.Heap.Binominal.Tree {VV : a | Data.Heap.Binominal.root lq_tmp$x##783 &lt;= VV})</span><span class='hs-definition'>treeIsBoundedByItsRootLemma</span></a> <span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span><span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>r</span><span class='hs-layout'>,</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>x</span><span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>ts</span><span class='hs-layout'>}</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span>
+<span class=hs-linenum> 86: </span>  <a class=annot href="#"><span class=annottext>forall a .
+lq_tmp$x##840:GHC.Types.Int -&gt; lq_tmp$x##841:a -&gt; lq_tmp$x##842:[(Data.Heap.Binominal.Tree {lq_tmp$x##828 : a | lq_tmp$x##841 &lt;= lq_tmp$x##828})] -&gt; {lq_tmp$x##835 : (Data.Heap.Binominal.Tree a) | Data.Heap.Binominal.subtrees lq_tmp$x##835 == lq_tmp$x##842
+                                                                                                                                                                                                     &amp;&amp; Data.Heap.Binominal._root lq_tmp$x##835 == lq_tmp$x##841
+                                                                                                                                                                                                     &amp;&amp; Data.Heap.Binominal._rank lq_tmp$x##835 == lq_tmp$x##840
+                                                                                                                                                                                                     &amp;&amp; Data.Heap.Binominal.root lq_tmp$x##835 == lq_tmp$x##841}</span><span class='hs-conid'>Node</span></a> <span class='hs-layout'>{</span><span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><a class=annot href="#"><span class=annottext>{lq_tmp$x##848 : GHC.Types.Int | lq_tmp$x##848 == ds_d2r9}</span><span class='hs-varid'>r</span></a><span class='hs-layout'>,</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><a class=annot href="#"><span class=annottext>{lq_tmp$x##849 : a | lq_tmp$x##849 == ds_d2ra}</span><span class='hs-varid'>x</span></a><span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span><span class='hs-keyglyph'>=</span><a class=annot href="#"><span class=annottext>{lq_tmp$x##855 : [(Data.Heap.Binominal.Tree {lq_tmp$x##850 : a | ds_d2ra &lt;= lq_tmp$x##850})] | len lq_tmp$x##855 &gt;= 0
+                                                                                               &amp;&amp; lq_tmp$x##855 == ds_d2rb}</span><span class='hs-varid'>ts</span></a><span class='hs-layout'>}</span>
 <span class=hs-linenum> 87: </span>
-<span class=hs-linenum> 88: </span><span class='hs-comment'>-- {-@ isBoundedTree :: Ord a =&gt; x:a -&gt; BoundedTree a x -&gt; b -&gt; b @-}</span>
-<span class=hs-linenum> 89: </span><span class='hs-comment'>-- isBoundedTree :: Ord a =&gt; a -&gt; Tree a -&gt; b -&gt; b</span>
-<span class=hs-linenum> 90: </span><span class='hs-comment'>-- isBoundedTree root tree z = z</span>
-<span class=hs-linenum> 91: </span>
-<span class=hs-linenum> 92: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>isBoundedTree</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>x</span><span class='hs-conop'>:</span><span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-keyword'>{v:</span><span class='hs-definition'>a</span> <span class='hs-keyword'>| x &lt;= v}</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>BoundedTree</span> <span class='hs-varid'>a</span> <span class='hs-varid'>x</span> <span class='hs-keyword'>@-}</span>
-<span class=hs-linenum> 93: </span><span class='hs-definition'>isBoundedTree</span> <span class='hs-keyglyph'>::</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span>
-<span class=hs-linenum> 94: </span><span class='hs-definition'>isBoundedTree</span> <span class='hs-varid'>root</span> <span class='hs-varid'>tree</span><span class='hs-keyglyph'>@</span><span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span><span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>r</span><span class='hs-layout'>,</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>x</span><span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>ts</span><span class='hs-layout'>}</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span>
-<span class=hs-linenum> 95: </span>    <span class='hs-keyword'>case</span> <span class='hs-varid'>ts</span> <span class='hs-keyword'>of</span>
-<span class=hs-linenum> 96: </span>        <span class='hs-conid'>[]</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Node</span> <span class='hs-varid'>r</span> <span class='hs-varid'>x</span> <span class='hs-conid'>[]</span>
-<span class=hs-linenum> 97: </span>        <span class='hs-keyword'>_</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Node</span> <span class='hs-varid'>r</span> <span class='hs-varid'>x</span> <span class='hs-varid'>ts</span>
+<span class=hs-linenum> 88: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>link</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyword'>@-}</span>
+<span class=hs-linenum> 89: </span><a class=annot href="#"><span class=annottext>forall a .
+(GHC.Classes.Ord&lt;[]&gt; a) =&gt;
+lq_tmp$x##863:(Data.Heap.Binominal.Tree a) -&gt; lq_tmp$x##864:(Data.Heap.Binominal.Tree a) -&gt; (Data.Heap.Binominal.Tree a)</span><span class='hs-definition'>link</span></a> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree a)</span><span class='hs-varid'>t1</span></a><span class='hs-keyglyph'>@</span><span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span><span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>r1</span><span class='hs-layout'>,</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>x1</span><span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>ts1</span><span class='hs-layout'>}</span><span class='hs-layout'>)</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree a)</span><span class='hs-varid'>t2</span></a><span class='hs-keyglyph'>@</span><span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span><span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>r2</span><span class='hs-layout'>,</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>x2</span><span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>ts2</span><span class='hs-layout'>}</span><span class='hs-layout'>)</span>
+<span class=hs-linenum> 90: </span>  <span class='hs-keyglyph'>|</span> <a class=annot href="#"><span class=annottext>{lq_tmp$x##967 : a | lq_tmp$x##967 == ds_d2rX}</span><span class='hs-varid'>x1</span></a> <span class='hs-varop'>&lt;=</span> <a class=annot href="#"><span class=annottext>{lq_tmp$x##968 : a | lq_tmp$x##968 == ds_d2s0}</span><span class='hs-varid'>x2</span></a>  <span class='hs-keyglyph'>=</span>
+<span class=hs-linenum> 91: </span>    <span class='hs-keyword'>let</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {lq_tmp$x##1124 : a^"lq_tmp$x##1123" | $k_##1122[VV##1121:=lq_tmp$x##1124][lq_tmp$x##1120:=lq_anf$##7205759403792803047##d2sn]
+                                                                 &amp;&amp; Data.Heap.Binominal.root lq_anf$##7205759403792803047##d2sn &lt;= lq_tmp$x##1124})</span><span class='hs-varid'>t2BoundedByX2</span></a> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {lq_tmp$x##1124 : a^"lq_tmp$x##1123" | $k_##1122[VV##1121:=lq_tmp$x##1124][lq_tmp$x##1120:=lq_anf$##7205759403792803047##d2sn]
+                                                                 &amp;&amp; Data.Heap.Binominal.root lq_anf$##7205759403792803047##d2sn &lt;= lq_tmp$x##1124})</span><span class='hs-varid'>treeIsBoundedByItsRootLemma</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1126 : (Data.Heap.Binominal.Tree a) | lq_tmp$x##1126 == t2##a13S
+                                                 &amp;&amp; Data.Heap.Binominal.subtrees lq_tmp$x##1126 == ds_d2s1
+                                                 &amp;&amp; Data.Heap.Binominal._root lq_tmp$x##1126 == ds_d2s0
+                                                 &amp;&amp; Data.Heap.Binominal._rank lq_tmp$x##1126 == ds_d2rZ
+                                                 &amp;&amp; Data.Heap.Binominal.root lq_tmp$x##1126 == ds_d2s0
+                                                 &amp;&amp; lq_tmp$x##1126 == Data.Heap.Binominal.Node ds_d2rZ ds_d2s0 ds_d2s1
+                                                 &amp;&amp; Data.Heap.Binominal.subtrees lq_tmp$x##1126 == ds_d2s1
+                                                 &amp;&amp; Data.Heap.Binominal._root lq_tmp$x##1126 == ds_d2s0
+                                                 &amp;&amp; Data.Heap.Binominal._rank lq_tmp$x##1126 == ds_d2rZ
+                                                 &amp;&amp; Data.Heap.Binominal.root lq_tmp$x##1126 == ds_d2s0
+                                                 &amp;&amp; lq_tmp$x##1126 == lq_anf$##7205759403792803047##d2sn}</span><span class='hs-varid'>t2</span></a> <span class='hs-keyword'>in</span>
+<span class=hs-linenum> 92: </span>    <span class='hs-keyword'>let</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {lq_tmp$x##1143 : a^"lq_tmp$x##1142" | $k_##1141[VV##1140:=lq_tmp$x##1143][lq_tmp$x##1137:=ds_d2rX][lq_tmp$x##1138:=ds_d2s0][lq_tmp$x##1139:=t2BoundedByX2##a24q]
+                                                                 &amp;&amp; ds_d2rX &lt;= lq_tmp$x##1143})</span><span class='hs-varid'>t2BoundedByX1</span></a> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {lq_tmp$x##1143 : a^"lq_tmp$x##1142" | $k_##1141[VV##1140:=lq_tmp$x##1143][lq_tmp$x##1137:=ds_d2rX][lq_tmp$x##1138:=ds_d2s0][lq_tmp$x##1139:=t2BoundedByX2##a24q]
+                                                                 &amp;&amp; ds_d2rX &lt;= lq_tmp$x##1143})</span><span class='hs-varid'>boundedTreeTransitivityLemma</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1144 : a | lq_tmp$x##1144 == ds_d2rX}</span><span class='hs-varid'>x1</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1145 : a | lq_tmp$x##1145 == ds_d2s0}</span><span class='hs-varid'>x2</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1147 : (Data.Heap.Binominal.Tree {lq_tmp$x##1146 : a^"lq_tmp$x##1123" | $k_##1122[VV##1121:=lq_tmp$x##1146][lq_tmp$x##1118:=lq_tmp$x##1147][lq_tmp$x##1120:=lq_anf$##7205759403792803047##d2sn][lq_tmp$x##1124:=lq_tmp$x##1146]
+                                                                                   &amp;&amp; Data.Heap.Binominal.root lq_anf$##7205759403792803047##d2sn &lt;= lq_tmp$x##1146}) | lq_tmp$x##1147 == t2BoundedByX2##a24q}</span><span class='hs-varid'>t2BoundedByX2</span></a> <span class='hs-keyword'>in</span>
+<span class=hs-linenum> 93: </span>    <span class='hs-conid'>Node</span> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1169 : GHC.Types.Int^"lq_tmp$x##1168" | lq_tmp$x##1169 == ds_d2rW + lq_anf$##7205759403792803055##d2sv}</span><span class='hs-layout'>(</span></a><a class=annot href="#"><span class=annottext>{lq_tmp$x##1172 : GHC.Types.Int | lq_tmp$x##1172 == ds_d2rW}</span><span class='hs-varid'>r1</span></a><span class='hs-varop'>+</span><a class=annot href="#"><span class=annottext>{lq_tmp$x##1152 : GHC.Types.Int | lq_tmp$x##1152 == lq_anf$##7205759403792803054##d2su}</span><span class='hs-num'>1</span></a><span class='hs-layout'>)</span> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1240 : a | lq_tmp$x##1240 == ds_d2rX}</span><span class='hs-varid'>x1</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1183 : [{lq_tmp$x##1198 : (Data.Heap.Binominal.Tree {lq_tmp$x##1197 : a^"lq_tmp$x##1193" | $k_##1192[VV##1191:=lq_tmp$x##1197][VV##1194:=lq_tmp$x##1198][lq_tmp$x##1187:=t2BoundedByX1##a24r][lq_tmp$x##1188:=ds_d2rY]})^"lq_tmp$x##1196" | $k_##1195[VV##1194:=lq_tmp$x##1198][lq_tmp$x##1187:=t2BoundedByX1##a24r][lq_tmp$x##1188:=ds_d2rY]}]&lt;\lq_tmp$x##1190 VV -&gt; {lq_tmp$x##1198 : (Data.Heap.Binominal.Tree {lq_tmp$x##1197 : a^"lq_tmp$x##1193" "lq_tmp$x##1201" | $k_##1200[VV##1199:=lq_tmp$x##1197][VV##1202:=lq_tmp$x##1198][lq_tmp$x##1187:=t2BoundedByX1##a24r][lq_tmp$x##1188:=ds_d2rY][lq_tmp$x##1205:=lq_tmp$x##1190]})^"lq_tmp$x##1196" "lq_tmp$x##1204" | $k_##1203[VV##1202:=lq_tmp$x##1198][lq_tmp$x##1187:=t2BoundedByX1##a24r][lq_tmp$x##1188:=ds_d2rY][lq_tmp$x##1205:=lq_tmp$x##1190]}&gt; | tail lq_tmp$x##1183 == ds_d2rY
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             &amp;&amp; head lq_tmp$x##1183 == t2BoundedByX1##a24r
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             &amp;&amp; len lq_tmp$x##1183 == 1 + len ds_d2rY}</span><span class='hs-layout'>(</span></a><a class=annot href="#"><span class=annottext>{lq_tmp$x##1208 : (Data.Heap.Binominal.Tree {lq_tmp$x##1207 : a^"lq_tmp$x##1142" | $k_##1141[VV##1140:=lq_tmp$x##1207][lq_tmp$x##1133:=lq_tmp$x##1208][lq_tmp$x##1137:=ds_d2rX][lq_tmp$x##1138:=ds_d2s0][lq_tmp$x##1139:=t2BoundedByX2##a24q][lq_tmp$x##1143:=lq_tmp$x##1207]
+                                                                                   &amp;&amp; ds_d2rX &lt;= lq_tmp$x##1207}) | lq_tmp$x##1208 == t2BoundedByX1##a24r}</span><span class='hs-varid'>t2BoundedByX1</span></a><span class='hs-conop'>:</span><a class=annot href="#"><span class=annottext>{lq_tmp$x##1214 : [(Data.Heap.Binominal.Tree {lq_tmp$x##1209 : a | ds_d2rX &lt;= lq_tmp$x##1209})] | len lq_tmp$x##1214 &gt;= 0
+                                                                                                  &amp;&amp; lq_tmp$x##1214 == ds_d2rY}</span><span class='hs-varid'>ts1</span></a><span class='hs-layout'>)</span>
+<span class=hs-linenum> 94: </span>  <span class='hs-keyglyph'>|</span> <span class='hs-varid'>otherwise</span> <span class='hs-keyglyph'>=</span>
+<span class=hs-linenum> 95: </span>    <span class='hs-keyword'>let</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {lq_tmp$x##986 : a^"lq_tmp$x##985" | $k_##984[VV##983:=lq_tmp$x##986][lq_tmp$x##982:=lq_anf$##7205759403792803046##d2sm]
+                                                               &amp;&amp; Data.Heap.Binominal.root lq_anf$##7205759403792803046##d2sm &lt;= lq_tmp$x##986})</span><span class='hs-varid'>t1BoundedByX1</span></a> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {lq_tmp$x##986 : a^"lq_tmp$x##985" | $k_##984[VV##983:=lq_tmp$x##986][lq_tmp$x##982:=lq_anf$##7205759403792803046##d2sm]
+                                                               &amp;&amp; Data.Heap.Binominal.root lq_anf$##7205759403792803046##d2sm &lt;= lq_tmp$x##986})</span><span class='hs-varid'>treeIsBoundedByItsRootLemma</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##988 : (Data.Heap.Binominal.Tree a) | lq_tmp$x##988 == t1##a13O
+                                                &amp;&amp; Data.Heap.Binominal.subtrees lq_tmp$x##988 == ds_d2rY
+                                                &amp;&amp; Data.Heap.Binominal._root lq_tmp$x##988 == ds_d2rX
+                                                &amp;&amp; Data.Heap.Binominal._rank lq_tmp$x##988 == ds_d2rW
+                                                &amp;&amp; Data.Heap.Binominal.root lq_tmp$x##988 == ds_d2rX
+                                                &amp;&amp; lq_tmp$x##988 == Data.Heap.Binominal.Node ds_d2rW ds_d2rX ds_d2rY
+                                                &amp;&amp; Data.Heap.Binominal.subtrees lq_tmp$x##988 == ds_d2rY
+                                                &amp;&amp; Data.Heap.Binominal._root lq_tmp$x##988 == ds_d2rX
+                                                &amp;&amp; Data.Heap.Binominal._rank lq_tmp$x##988 == ds_d2rW
+                                                &amp;&amp; Data.Heap.Binominal.root lq_tmp$x##988 == ds_d2rX
+                                                &amp;&amp; lq_tmp$x##988 == lq_anf$##7205759403792803046##d2sm}</span><span class='hs-varid'>t1</span></a> <span class='hs-keyword'>in</span>
+<span class=hs-linenum> 96: </span>    <span class='hs-keyword'>let</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {lq_tmp$x##1005 : a^"lq_tmp$x##1004" | $k_##1003[VV##1002:=lq_tmp$x##1005][lq_tmp$x##1000:=ds_d2rX][lq_tmp$x##1001:=t1BoundedByX1##a26m][lq_tmp$x##999:=ds_d2s0]
+                                                                 &amp;&amp; ds_d2s0 &lt;= lq_tmp$x##1005})</span><span class='hs-varid'>t1BoundedByX2</span></a> <span class='hs-keyglyph'>=</span> <a class=annot href="#"><span class=annottext>(Data.Heap.Binominal.Tree {lq_tmp$x##1005 : a^"lq_tmp$x##1004" | $k_##1003[VV##1002:=lq_tmp$x##1005][lq_tmp$x##1000:=ds_d2rX][lq_tmp$x##1001:=t1BoundedByX1##a26m][lq_tmp$x##999:=ds_d2s0]
+                                                                 &amp;&amp; ds_d2s0 &lt;= lq_tmp$x##1005})</span><span class='hs-varid'>boundedTreeTransitivityLemma</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1006 : a | lq_tmp$x##1006 == ds_d2s0}</span><span class='hs-varid'>x2</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1007 : a | lq_tmp$x##1007 == ds_d2rX}</span><span class='hs-varid'>x1</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1009 : (Data.Heap.Binominal.Tree {lq_tmp$x##1008 : a^"lq_tmp$x##985" | $k_##984[VV##983:=lq_tmp$x##1008][lq_tmp$x##980:=lq_tmp$x##1009][lq_tmp$x##982:=lq_anf$##7205759403792803046##d2sm][lq_tmp$x##986:=lq_tmp$x##1008]
+                                                                                  &amp;&amp; Data.Heap.Binominal.root lq_anf$##7205759403792803046##d2sm &lt;= lq_tmp$x##1008}) | lq_tmp$x##1009 == t1BoundedByX1##a26m}</span><span class='hs-varid'>t1BoundedByX1</span></a> <span class='hs-keyword'>in</span>
+<span class=hs-linenum> 97: </span>      <span class='hs-conid'>Node</span> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1031 : GHC.Types.Int^"lq_tmp$x##1030" | lq_tmp$x##1031 == ds_d2rZ + lq_anf$##7205759403792803051##d2sr}</span><span class='hs-layout'>(</span></a><a class=annot href="#"><span class=annottext>{lq_tmp$x##1034 : GHC.Types.Int | lq_tmp$x##1034 == ds_d2rZ}</span><span class='hs-varid'>r2</span></a><span class='hs-varop'>+</span><a class=annot href="#"><span class=annottext>{lq_tmp$x##1014 : GHC.Types.Int | lq_tmp$x##1014 == lq_anf$##7205759403792803050##d2sq}</span><span class='hs-num'>1</span></a><span class='hs-layout'>)</span> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1102 : a | lq_tmp$x##1102 == ds_d2s0}</span><span class='hs-varid'>x2</span></a> <a class=annot href="#"><span class=annottext>{lq_tmp$x##1045 : [{lq_tmp$x##1060 : (Data.Heap.Binominal.Tree {lq_tmp$x##1059 : a^"lq_tmp$x##1055" | $k_##1054[VV##1053:=lq_tmp$x##1059][VV##1056:=lq_tmp$x##1060][lq_tmp$x##1049:=t1BoundedByX2##a26n][lq_tmp$x##1050:=ds_d2s1]})^"lq_tmp$x##1058" | $k_##1057[VV##1056:=lq_tmp$x##1060][lq_tmp$x##1049:=t1BoundedByX2##a26n][lq_tmp$x##1050:=ds_d2s1]}]&lt;\lq_tmp$x##1052 VV -&gt; {lq_tmp$x##1060 : (Data.Heap.Binominal.Tree {lq_tmp$x##1059 : a^"lq_tmp$x##1055" "lq_tmp$x##1063" | $k_##1062[VV##1061:=lq_tmp$x##1059][VV##1064:=lq_tmp$x##1060][lq_tmp$x##1049:=t1BoundedByX2##a26n][lq_tmp$x##1050:=ds_d2s1][lq_tmp$x##1067:=lq_tmp$x##1052]})^"lq_tmp$x##1058" "lq_tmp$x##1066" | $k_##1065[VV##1064:=lq_tmp$x##1060][lq_tmp$x##1049:=t1BoundedByX2##a26n][lq_tmp$x##1050:=ds_d2s1][lq_tmp$x##1067:=lq_tmp$x##1052]}&gt; | tail lq_tmp$x##1045 == ds_d2s1
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             &amp;&amp; head lq_tmp$x##1045 == t1BoundedByX2##a26n
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             &amp;&amp; len lq_tmp$x##1045 == 1 + len ds_d2s1}</span><span class='hs-layout'>(</span></a><a class=annot href="#"><span class=annottext>{lq_tmp$x##1070 : (Data.Heap.Binominal.Tree {lq_tmp$x##1069 : a^"lq_tmp$x##1004" | $k_##1003[VV##1002:=lq_tmp$x##1069][lq_tmp$x##1000:=ds_d2rX][lq_tmp$x##1001:=t1BoundedByX1##a26m][lq_tmp$x##1005:=lq_tmp$x##1069][lq_tmp$x##995:=lq_tmp$x##1070][lq_tmp$x##999:=ds_d2s0]
+                                                                                   &amp;&amp; ds_d2s0 &lt;= lq_tmp$x##1069}) | lq_tmp$x##1070 == t1BoundedByX2##a26n}</span><span class='hs-varid'>t1BoundedByX2</span></a><span class='hs-conop'>:</span><a class=annot href="#"><span class=annottext>{lq_tmp$x##1076 : [(Data.Heap.Binominal.Tree {lq_tmp$x##1071 : a | ds_d2s0 &lt;= lq_tmp$x##1071})] | len lq_tmp$x##1076 &gt;= 0
+                                                                                                  &amp;&amp; lq_tmp$x##1076 == ds_d2s1}</span><span class='hs-varid'>ts2</span></a><span class='hs-layout'>)</span>
 <span class=hs-linenum> 98: </span>
-<span class=hs-linenum> 99: </span><span class='hs-comment'>-- x1 &lt;= x2 -&gt; BoundedTree a x2 -&gt; BoundedTree a x1</span>
+<span class=hs-linenum> 99: </span><span class='hs-comment'>----------------------------------------------------------------</span>
 <span class=hs-linenum>100: </span>
-<span class=hs-linenum>101: </span><span class='hs-keyword'>{-@</span> <span class='hs-varid'>link</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Ord</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>=&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Tree</span> <span class='hs-varid'>a</span> <span class='hs-keyword'>@-}</span>
-<span class=hs-linenum>102: </span><span class='hs-definition'>link</span> <span class='hs-varid'>t1</span><span class='hs-keyglyph'>@</span><span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span><span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>r1</span><span class='hs-layout'>,</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>x1</span><span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>ts1</span><span class='hs-layout'>}</span><span class='hs-layout'>)</span> <span class='hs-varid'>t2</span><span class='hs-keyglyph'>@</span><span class='hs-layout'>(</span><span class='hs-conid'>Node</span> <span class='hs-layout'>{</span><span class='hs-sel'>_rank</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>r2</span><span class='hs-layout'>,</span> <span class='hs-sel'>_root</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>x2</span><span class='hs-layout'>,</span> <span class='hs-varid'>subtrees</span><span class='hs-keyglyph'>=</span><span class='hs-varid'>ts2</span><span class='hs-layout'>}</span><span class='hs-layout'>)</span>
-<span class=hs-linenum>103: </span>  <span class='hs-keyglyph'>|</span> <span class='hs-varid'>x1</span> <span class='hs-varop'>&lt;=</span> <span class='hs-varid'>x2</span>  <span class='hs-keyglyph'>=</span>
-<span class=hs-linenum>104: </span>    <span class='hs-comment'>--   assert (x1 &lt;= x2) $</span>
-<span class=hs-linenum>105: </span>    <span class='hs-comment'>--    isBoundedTree x1 ts1 $</span>
-<span class=hs-linenum>106: </span>    <span class='hs-comment'>--    isBoundedTree x2 ts2 $</span>
-<span class=hs-linenum>107: </span>        <span class='hs-keyword'>let</span> <span class='hs-varid'>t2Bounded</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>boundedTreeTransitivityLemma</span> <span class='hs-varid'>x1</span> <span class='hs-varid'>x2</span> <span class='hs-layout'>(</span><span class='hs-varid'>isBoundedTree</span> <span class='hs-varid'>x2</span> <span class='hs-varid'>t2</span><span class='hs-layout'>)</span> <span class='hs-keyword'>in</span>
-<span class=hs-linenum>108: </span>        <span class='hs-conid'>Node</span> <span class='hs-layout'>(</span><span class='hs-varid'>r1</span><span class='hs-varop'>+</span><span class='hs-num'>1</span><span class='hs-layout'>)</span> <span class='hs-varid'>x1</span> <span class='hs-layout'>(</span><span class='hs-varid'>t2Bounded</span><span class='hs-conop'>:</span><span class='hs-varid'>ts1</span><span class='hs-layout'>)</span>
-<span class=hs-linenum>109: </span>    <span class='hs-comment'>--    isBoundedTree x2 t2 $</span>
-<span class=hs-linenum>110: </span>                <span class='hs-comment'>-- x1 &lt;= x2</span>
-<span class=hs-linenum>111: </span>                <span class='hs-comment'>-- \forall v \in ts1, x1 &lt;= v</span>
-<span class=hs-linenum>112: </span>                <span class='hs-comment'>-- \forall v \in ts2, x2 &lt;= v</span>
-<span class=hs-linenum>113: </span>                <span class='hs-comment'>-- Goal: \forall v \in ts2, x1 &lt;= v</span>
-<span class=hs-linenum>114: </span>
+<span class=hs-linenum>101: </span><span class='hs-comment'>-- {-| Empty heap.</span>
+<span class=hs-linenum>102: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>103: </span>
+<span class=hs-linenum>104: </span><span class='hs-comment'>-- empty :: Heap a</span>
+<span class=hs-linenum>105: </span><span class='hs-comment'>-- empty = Heap []</span>
+<span class=hs-linenum>106: </span>
+<span class=hs-linenum>107: </span><span class='hs-comment'>-- {-|</span>
+<span class=hs-linenum>108: </span><span class='hs-comment'>-- See if the heap is empty.</span>
+<span class=hs-linenum>109: </span>
+<span class=hs-linenum>110: </span><span class='hs-comment'>-- &gt;&gt;&gt; Data.Heap.Binominal.null empty</span>
+<span class=hs-linenum>111: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>112: </span><span class='hs-comment'>-- &gt;&gt;&gt; Data.Heap.Binominal.null (singleton 1)</span>
+<span class=hs-linenum>113: </span><span class='hs-comment'>-- False</span>
+<span class=hs-linenum>114: </span><span class='hs-comment'>-- -}</span>
 <span class=hs-linenum>115: </span>
-<span class=hs-linenum>116: </span>
-<span class=hs-linenum>117: </span>  <span class='hs-keyglyph'>|</span> <span class='hs-varid'>otherwise</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Node</span> <span class='hs-layout'>(</span><span class='hs-varid'>r2</span><span class='hs-varop'>+</span><span class='hs-num'>1</span><span class='hs-layout'>)</span> <span class='hs-varid'>x2</span> <span class='hs-layout'>(</span><span class='hs-varid'>t1</span><span class='hs-conop'>:</span><span class='hs-varid'>ts2</span><span class='hs-layout'>)</span>
+<span class=hs-linenum>116: </span><span class='hs-comment'>-- null :: Heap a -&gt; Bool</span>
+<span class=hs-linenum>117: </span><span class='hs-comment'>-- null (Heap ts) = L.null ts</span>
 <span class=hs-linenum>118: </span>
-<span class=hs-linenum>119: </span><span class='hs-comment'>----------------------------------------------------------------</span>
-<span class=hs-linenum>120: </span>
-<span class=hs-linenum>121: </span><span class='hs-comment'>-- {-| Empty heap.</span>
-<span class=hs-linenum>122: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>123: </span>
-<span class=hs-linenum>124: </span><span class='hs-comment'>-- empty :: Heap a</span>
-<span class=hs-linenum>125: </span><span class='hs-comment'>-- empty = Heap []</span>
+<span class=hs-linenum>119: </span><span class='hs-comment'>-- {-| Singleton heap.</span>
+<span class=hs-linenum>120: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>121: </span>
+<span class=hs-linenum>122: </span><span class='hs-comment'>-- singleton :: a -&gt; Heap a</span>
+<span class=hs-linenum>123: </span><span class='hs-comment'>-- singleton x = Heap [Node 0 x []]</span>
+<span class=hs-linenum>124: </span>
+<span class=hs-linenum>125: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
 <span class=hs-linenum>126: </span>
-<span class=hs-linenum>127: </span><span class='hs-comment'>-- {-|</span>
-<span class=hs-linenum>128: </span><span class='hs-comment'>-- See if the heap is empty.</span>
-<span class=hs-linenum>129: </span>
-<span class=hs-linenum>130: </span><span class='hs-comment'>-- &gt;&gt;&gt; Data.Heap.Binominal.null empty</span>
-<span class=hs-linenum>131: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>132: </span><span class='hs-comment'>-- &gt;&gt;&gt; Data.Heap.Binominal.null (singleton 1)</span>
-<span class=hs-linenum>133: </span><span class='hs-comment'>-- False</span>
-<span class=hs-linenum>134: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>135: </span>
-<span class=hs-linenum>136: </span><span class='hs-comment'>-- null :: Heap a -&gt; Bool</span>
-<span class=hs-linenum>137: </span><span class='hs-comment'>-- null (Heap ts) = L.null ts</span>
-<span class=hs-linenum>138: </span>
-<span class=hs-linenum>139: </span><span class='hs-comment'>-- {-| Singleton heap.</span>
-<span class=hs-linenum>140: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>141: </span>
-<span class=hs-linenum>142: </span><span class='hs-comment'>-- singleton :: a -&gt; Heap a</span>
-<span class=hs-linenum>143: </span><span class='hs-comment'>-- singleton x = Heap [Node 0 x []]</span>
-<span class=hs-linenum>144: </span>
-<span class=hs-linenum>145: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
-<span class=hs-linenum>146: </span>
-<span class=hs-linenum>147: </span><span class='hs-comment'>-- {-| Insertion. Worst-case: O(log N), amortized: O(1)</span>
-<span class=hs-linenum>148: </span>
-<span class=hs-linenum>149: </span><span class='hs-comment'>-- &gt;&gt;&gt; insert 7 (fromList [5,3]) == fromList [3,5,7]</span>
-<span class=hs-linenum>150: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>151: </span><span class='hs-comment'>-- &gt;&gt;&gt; insert 5 empty            == singleton 5</span>
-<span class=hs-linenum>152: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>153: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>154: </span>
-<span class=hs-linenum>155: </span><span class='hs-comment'>-- insert :: Ord a =&gt; a -&gt; Heap a -&gt; Heap a</span>
-<span class=hs-linenum>156: </span><span class='hs-comment'>-- insert x (Heap ts) = Heap (insert' (Node 0 x []) ts)</span>
-<span class=hs-linenum>157: </span>
-<span class=hs-linenum>158: </span><span class='hs-comment'>-- insert' :: Ord a =&gt; Tree a -&gt; [Tree a] -&gt; [Tree a]</span>
-<span class=hs-linenum>159: </span><span class='hs-comment'>-- insert' t [] = [t]</span>
-<span class=hs-linenum>160: </span><span class='hs-comment'>-- insert' t ts@(t':ts')</span>
-<span class=hs-linenum>161: </span><span class='hs-comment'>--   | rank t &lt; rank t' = t : ts</span>
-<span class=hs-linenum>162: </span><span class='hs-comment'>--   | otherwise        = insert' (link t t') ts'</span>
-<span class=hs-linenum>163: </span>
-<span class=hs-linenum>164: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
-<span class=hs-linenum>165: </span>
-<span class=hs-linenum>166: </span><span class='hs-comment'>-- {-| Creating a heap from a list.</span>
-<span class=hs-linenum>167: </span>
-<span class=hs-linenum>168: </span><span class='hs-comment'>-- &gt;&gt;&gt; empty == fromList []</span>
-<span class=hs-linenum>169: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>170: </span><span class='hs-comment'>-- &gt;&gt;&gt; singleton 'a' == fromList ['a']</span>
-<span class=hs-linenum>171: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>172: </span><span class='hs-comment'>-- &gt;&gt;&gt; fromList [5,3] == fromList [5,3]</span>
-<span class=hs-linenum>173: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>174: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>175: </span>
-<span class=hs-linenum>176: </span><span class='hs-comment'>-- fromList :: Ord a =&gt; [a] -&gt; Heap a</span>
-<span class=hs-linenum>177: </span><span class='hs-comment'>-- fromList = foldl' (flip insert) empty</span>
+<span class=hs-linenum>127: </span><span class='hs-comment'>-- {-| Insertion. Worst-case: O(log N), amortized: O(1)</span>
+<span class=hs-linenum>128: </span>
+<span class=hs-linenum>129: </span><span class='hs-comment'>-- &gt;&gt;&gt; insert 7 (fromList [5,3]) == fromList [3,5,7]</span>
+<span class=hs-linenum>130: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>131: </span><span class='hs-comment'>-- &gt;&gt;&gt; insert 5 empty            == singleton 5</span>
+<span class=hs-linenum>132: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>133: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>134: </span>
+<span class=hs-linenum>135: </span><span class='hs-comment'>-- insert :: Ord a =&gt; a -&gt; Heap a -&gt; Heap a</span>
+<span class=hs-linenum>136: </span><span class='hs-comment'>-- insert x (Heap ts) = Heap (insert' (Node 0 x []) ts)</span>
+<span class=hs-linenum>137: </span>
+<span class=hs-linenum>138: </span><span class='hs-comment'>-- insert' :: Ord a =&gt; Tree a -&gt; [Tree a] -&gt; [Tree a]</span>
+<span class=hs-linenum>139: </span><span class='hs-comment'>-- insert' t [] = [t]</span>
+<span class=hs-linenum>140: </span><span class='hs-comment'>-- insert' t ts@(t':ts')</span>
+<span class=hs-linenum>141: </span><span class='hs-comment'>--   | rank t &lt; rank t' = t : ts</span>
+<span class=hs-linenum>142: </span><span class='hs-comment'>--   | otherwise        = insert' (link t t') ts'</span>
+<span class=hs-linenum>143: </span>
+<span class=hs-linenum>144: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
+<span class=hs-linenum>145: </span>
+<span class=hs-linenum>146: </span><span class='hs-comment'>-- {-| Creating a heap from a list.</span>
+<span class=hs-linenum>147: </span>
+<span class=hs-linenum>148: </span><span class='hs-comment'>-- &gt;&gt;&gt; empty == fromList []</span>
+<span class=hs-linenum>149: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>150: </span><span class='hs-comment'>-- &gt;&gt;&gt; singleton 'a' == fromList ['a']</span>
+<span class=hs-linenum>151: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>152: </span><span class='hs-comment'>-- &gt;&gt;&gt; fromList [5,3] == fromList [5,3]</span>
+<span class=hs-linenum>153: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>154: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>155: </span>
+<span class=hs-linenum>156: </span><span class='hs-comment'>-- fromList :: Ord a =&gt; [a] -&gt; Heap a</span>
+<span class=hs-linenum>157: </span><span class='hs-comment'>-- fromList = foldl' (flip insert) empty</span>
+<span class=hs-linenum>158: </span>
+<span class=hs-linenum>159: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
+<span class=hs-linenum>160: </span>
+<span class=hs-linenum>161: </span><span class='hs-comment'>-- {-| Creating a list from a heap. Worst-case: O(N)</span>
+<span class=hs-linenum>162: </span>
+<span class=hs-linenum>163: </span><span class='hs-comment'>-- &gt;&gt;&gt; let xs = [5,3,5]</span>
+<span class=hs-linenum>164: </span><span class='hs-comment'>-- &gt;&gt;&gt; length (toList (fromList xs)) == length xs</span>
+<span class=hs-linenum>165: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>166: </span><span class='hs-comment'>-- &gt;&gt;&gt; toList empty</span>
+<span class=hs-linenum>167: </span><span class='hs-comment'>-- []</span>
+<span class=hs-linenum>168: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>169: </span>
+<span class=hs-linenum>170: </span><span class='hs-comment'>-- toList :: Heap a -&gt; [a]</span>
+<span class=hs-linenum>171: </span><span class='hs-comment'>-- toList (Heap ts) = concatMap toList' ts</span>
+<span class=hs-linenum>172: </span>
+<span class=hs-linenum>173: </span><span class='hs-comment'>-- toList' :: Tree a -&gt; [a]</span>
+<span class=hs-linenum>174: </span><span class='hs-comment'>-- toList' (Node _ x []) = [x]</span>
+<span class=hs-linenum>175: </span><span class='hs-comment'>-- toList' (Node _ x ts) = x : concatMap toList' ts</span>
+<span class=hs-linenum>176: </span>
+<span class=hs-linenum>177: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
 <span class=hs-linenum>178: </span>
-<span class=hs-linenum>179: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
+<span class=hs-linenum>179: </span><span class='hs-comment'>-- {-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N)</span>
 <span class=hs-linenum>180: </span>
-<span class=hs-linenum>181: </span><span class='hs-comment'>-- {-| Creating a list from a heap. Worst-case: O(N)</span>
-<span class=hs-linenum>182: </span>
-<span class=hs-linenum>183: </span><span class='hs-comment'>-- &gt;&gt;&gt; let xs = [5,3,5]</span>
-<span class=hs-linenum>184: </span><span class='hs-comment'>-- &gt;&gt;&gt; length (toList (fromList xs)) == length xs</span>
-<span class=hs-linenum>185: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>186: </span><span class='hs-comment'>-- &gt;&gt;&gt; toList empty</span>
-<span class=hs-linenum>187: </span><span class='hs-comment'>-- []</span>
-<span class=hs-linenum>188: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>181: </span><span class='hs-comment'>-- &gt;&gt;&gt; minimum (fromList [3,5,1])</span>
+<span class=hs-linenum>182: </span><span class='hs-comment'>-- Just 1</span>
+<span class=hs-linenum>183: </span><span class='hs-comment'>-- &gt;&gt;&gt; minimum empty</span>
+<span class=hs-linenum>184: </span><span class='hs-comment'>-- Nothing</span>
+<span class=hs-linenum>185: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>186: </span>
+<span class=hs-linenum>187: </span><span class='hs-comment'>-- minimum :: Ord a =&gt; Heap a -&gt; Maybe a</span>
+<span class=hs-linenum>188: </span><span class='hs-comment'>-- minimum (Heap ts) = root . fst &lt;$&gt; deleteMin' ts</span>
 <span class=hs-linenum>189: </span>
-<span class=hs-linenum>190: </span><span class='hs-comment'>-- toList :: Heap a -&gt; [a]</span>
-<span class=hs-linenum>191: </span><span class='hs-comment'>-- toList (Heap ts) = concatMap toList' ts</span>
-<span class=hs-linenum>192: </span>
-<span class=hs-linenum>193: </span><span class='hs-comment'>-- toList' :: Tree a -&gt; [a]</span>
-<span class=hs-linenum>194: </span><span class='hs-comment'>-- toList' (Node _ x []) = [x]</span>
-<span class=hs-linenum>195: </span><span class='hs-comment'>-- toList' (Node _ x ts) = x : concatMap toList' ts</span>
-<span class=hs-linenum>196: </span>
-<span class=hs-linenum>197: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
-<span class=hs-linenum>198: </span>
-<span class=hs-linenum>199: </span><span class='hs-comment'>-- {-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N)</span>
-<span class=hs-linenum>200: </span>
-<span class=hs-linenum>201: </span><span class='hs-comment'>-- &gt;&gt;&gt; minimum (fromList [3,5,1])</span>
-<span class=hs-linenum>202: </span><span class='hs-comment'>-- Just 1</span>
-<span class=hs-linenum>203: </span><span class='hs-comment'>-- &gt;&gt;&gt; minimum empty</span>
-<span class=hs-linenum>204: </span><span class='hs-comment'>-- Nothing</span>
-<span class=hs-linenum>205: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>206: </span>
-<span class=hs-linenum>207: </span><span class='hs-comment'>-- minimum :: Ord a =&gt; Heap a -&gt; Maybe a</span>
-<span class=hs-linenum>208: </span><span class='hs-comment'>-- minimum (Heap ts) = root . fst &lt;$&gt; deleteMin' ts</span>
-<span class=hs-linenum>209: </span>
-<span class=hs-linenum>210: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
-<span class=hs-linenum>211: </span>
-<span class=hs-linenum>212: </span><span class='hs-comment'>-- {-| Deleting the minimum element. Worst-case: O(log N), amortized: O(log N)</span>
-<span class=hs-linenum>213: </span>
-<span class=hs-linenum>214: </span><span class='hs-comment'>-- &gt;&gt;&gt; deleteMin (fromList [5,3,7]) == fromList [5,7]</span>
-<span class=hs-linenum>215: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>216: </span><span class='hs-comment'>-- &gt;&gt;&gt; deleteMin empty == empty</span>
-<span class=hs-linenum>217: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>218: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>219: </span>
-<span class=hs-linenum>220: </span><span class='hs-comment'>-- deleteMin :: Ord a =&gt; Heap a -&gt; Heap a</span>
-<span class=hs-linenum>221: </span><span class='hs-comment'>-- deleteMin (Heap ts) = case deleteMin' ts of</span>
-<span class=hs-linenum>222: </span><span class='hs-comment'>--     Nothing                  -&gt; empty</span>
-<span class=hs-linenum>223: </span><span class='hs-comment'>--     Just (Node _ _ ts1, ts2) -&gt; Heap (merge' (reverse ts1) ts2)</span>
+<span class=hs-linenum>190: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
+<span class=hs-linenum>191: </span>
+<span class=hs-linenum>192: </span><span class='hs-comment'>-- {-| Deleting the minimum element. Worst-case: O(log N), amortized: O(log N)</span>
+<span class=hs-linenum>193: </span>
+<span class=hs-linenum>194: </span><span class='hs-comment'>-- &gt;&gt;&gt; deleteMin (fromList [5,3,7]) == fromList [5,7]</span>
+<span class=hs-linenum>195: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>196: </span><span class='hs-comment'>-- &gt;&gt;&gt; deleteMin empty == empty</span>
+<span class=hs-linenum>197: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>198: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>199: </span>
+<span class=hs-linenum>200: </span><span class='hs-comment'>-- deleteMin :: Ord a =&gt; Heap a -&gt; Heap a</span>
+<span class=hs-linenum>201: </span><span class='hs-comment'>-- deleteMin (Heap ts) = case deleteMin' ts of</span>
+<span class=hs-linenum>202: </span><span class='hs-comment'>--     Nothing                  -&gt; empty</span>
+<span class=hs-linenum>203: </span><span class='hs-comment'>--     Just (Node _ _ ts1, ts2) -&gt; Heap (merge' (reverse ts1) ts2)</span>
+<span class=hs-linenum>204: </span>
+<span class=hs-linenum>205: </span><span class='hs-comment'>-- deleteMin2 :: Ord a =&gt; Heap a -&gt; Maybe (a, Heap a)</span>
+<span class=hs-linenum>206: </span><span class='hs-comment'>-- deleteMin2 (Heap []) = Nothing</span>
+<span class=hs-linenum>207: </span><span class='hs-comment'>-- deleteMin2 h         = (\m -&gt; (m, deleteMin h)) &lt;$&gt; minimum h</span>
+<span class=hs-linenum>208: </span>
+<span class=hs-linenum>209: </span><span class='hs-comment'>-- deleteMin' :: Ord a =&gt; [Tree a] -&gt; Maybe (Tree a, [Tree a])</span>
+<span class=hs-linenum>210: </span><span class='hs-comment'>-- deleteMin' []     = Nothing</span>
+<span class=hs-linenum>211: </span><span class='hs-comment'>-- deleteMin' [t]    = Just (t,[])</span>
+<span class=hs-linenum>212: </span><span class='hs-comment'>-- deleteMin' (t:ts)</span>
+<span class=hs-linenum>213: </span><span class='hs-comment'>--   | root t &lt; root t' = Just (t,  ts)</span>
+<span class=hs-linenum>214: </span><span class='hs-comment'>--   | otherwise        = Just (t', t:ts')</span>
+<span class=hs-linenum>215: </span><span class='hs-comment'>--   where</span>
+<span class=hs-linenum>216: </span><span class='hs-comment'>--     Just (t',ts')    = deleteMin' ts</span>
+<span class=hs-linenum>217: </span>
+<span class=hs-linenum>218: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
+<span class=hs-linenum>219: </span><span class='hs-comment'>-- {-| Merging two heaps. Worst-case: O(log N), amortized: O(log N)</span>
+<span class=hs-linenum>220: </span>
+<span class=hs-linenum>221: </span><span class='hs-comment'>-- &gt;&gt;&gt; merge (fromList [5,3]) (fromList [5,7]) == fromList [3,5,5,7]</span>
+<span class=hs-linenum>222: </span><span class='hs-comment'>-- True</span>
+<span class=hs-linenum>223: </span><span class='hs-comment'>-- -}</span>
 <span class=hs-linenum>224: </span>
-<span class=hs-linenum>225: </span><span class='hs-comment'>-- deleteMin2 :: Ord a =&gt; Heap a -&gt; Maybe (a, Heap a)</span>
-<span class=hs-linenum>226: </span><span class='hs-comment'>-- deleteMin2 (Heap []) = Nothing</span>
-<span class=hs-linenum>227: </span><span class='hs-comment'>-- deleteMin2 h         = (\m -&gt; (m, deleteMin h)) &lt;$&gt; minimum h</span>
-<span class=hs-linenum>228: </span>
-<span class=hs-linenum>229: </span><span class='hs-comment'>-- deleteMin' :: Ord a =&gt; [Tree a] -&gt; Maybe (Tree a, [Tree a])</span>
-<span class=hs-linenum>230: </span><span class='hs-comment'>-- deleteMin' []     = Nothing</span>
-<span class=hs-linenum>231: </span><span class='hs-comment'>-- deleteMin' [t]    = Just (t,[])</span>
-<span class=hs-linenum>232: </span><span class='hs-comment'>-- deleteMin' (t:ts)</span>
-<span class=hs-linenum>233: </span><span class='hs-comment'>--   | root t &lt; root t' = Just (t,  ts)</span>
-<span class=hs-linenum>234: </span><span class='hs-comment'>--   | otherwise        = Just (t', t:ts')</span>
-<span class=hs-linenum>235: </span><span class='hs-comment'>--   where</span>
-<span class=hs-linenum>236: </span><span class='hs-comment'>--     Just (t',ts')    = deleteMin' ts</span>
-<span class=hs-linenum>237: </span>
+<span class=hs-linenum>225: </span><span class='hs-comment'>-- merge :: Ord a =&gt; Heap a -&gt; Heap a -&gt; Heap a</span>
+<span class=hs-linenum>226: </span><span class='hs-comment'>-- merge (Heap ts1) (Heap ts2) = Heap (merge' ts1 ts2)</span>
+<span class=hs-linenum>227: </span>
+<span class=hs-linenum>228: </span><span class='hs-comment'>-- merge' :: Ord a =&gt; [Tree a] -&gt; [Tree a] -&gt; [Tree a]</span>
+<span class=hs-linenum>229: </span><span class='hs-comment'>-- merge' ts1 [] = ts1</span>
+<span class=hs-linenum>230: </span><span class='hs-comment'>-- merge' [] ts2 = ts2</span>
+<span class=hs-linenum>231: </span><span class='hs-comment'>-- merge' ts1@(t1:ts1') ts2@(t2:ts2')</span>
+<span class=hs-linenum>232: </span><span class='hs-comment'>--   | rank t1 &lt; rank t2 = t1 : merge' ts1' ts2</span>
+<span class=hs-linenum>233: </span><span class='hs-comment'>--   | rank t2 &lt; rank t1 = t2 : merge' ts1 ts2'</span>
+<span class=hs-linenum>234: </span><span class='hs-comment'>--   | otherwise         = insert' (link t1 t2) (merge' ts1' ts2')</span>
+<span class=hs-linenum>235: </span>
+<span class=hs-linenum>236: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
+<span class=hs-linenum>237: </span><span class='hs-comment'>-- -- Basic operations</span>
 <span class=hs-linenum>238: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
-<span class=hs-linenum>239: </span><span class='hs-comment'>-- {-| Merging two heaps. Worst-case: O(log N), amortized: O(log N)</span>
-<span class=hs-linenum>240: </span>
-<span class=hs-linenum>241: </span><span class='hs-comment'>-- &gt;&gt;&gt; merge (fromList [5,3]) (fromList [5,7]) == fromList [3,5,5,7]</span>
-<span class=hs-linenum>242: </span><span class='hs-comment'>-- True</span>
-<span class=hs-linenum>243: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>244: </span>
-<span class=hs-linenum>245: </span><span class='hs-comment'>-- merge :: Ord a =&gt; Heap a -&gt; Heap a -&gt; Heap a</span>
-<span class=hs-linenum>246: </span><span class='hs-comment'>-- merge (Heap ts1) (Heap ts2) = Heap (merge' ts1 ts2)</span>
-<span class=hs-linenum>247: </span>
-<span class=hs-linenum>248: </span><span class='hs-comment'>-- merge' :: Ord a =&gt; [Tree a] -&gt; [Tree a] -&gt; [Tree a]</span>
-<span class=hs-linenum>249: </span><span class='hs-comment'>-- merge' ts1 [] = ts1</span>
-<span class=hs-linenum>250: </span><span class='hs-comment'>-- merge' [] ts2 = ts2</span>
-<span class=hs-linenum>251: </span><span class='hs-comment'>-- merge' ts1@(t1:ts1') ts2@(t2:ts2')</span>
-<span class=hs-linenum>252: </span><span class='hs-comment'>--   | rank t1 &lt; rank t2 = t1 : merge' ts1' ts2</span>
-<span class=hs-linenum>253: </span><span class='hs-comment'>--   | rank t2 &lt; rank t1 = t2 : merge' ts1 ts2'</span>
-<span class=hs-linenum>254: </span><span class='hs-comment'>--   | otherwise         = insert' (link t1 t2) (merge' ts1' ts2')</span>
-<span class=hs-linenum>255: </span>
-<span class=hs-linenum>256: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
-<span class=hs-linenum>257: </span><span class='hs-comment'>-- -- Basic operations</span>
-<span class=hs-linenum>258: </span><span class='hs-comment'>-- ----------------------------------------------------------------</span>
-<span class=hs-linenum>259: </span>
-<span class=hs-linenum>260: </span><span class='hs-comment'>-- {-| Checking validity of a heap.</span>
-<span class=hs-linenum>261: </span><span class='hs-comment'>-- -}</span>
-<span class=hs-linenum>262: </span>
-<span class=hs-linenum>263: </span><span class='hs-comment'>-- valid :: Ord a =&gt; Heap a -&gt; Bool</span>
-<span class=hs-linenum>264: </span><span class='hs-comment'>-- valid t = isOrdered (heapSort t)</span>
-<span class=hs-linenum>265: </span>
-<span class=hs-linenum>266: </span><span class='hs-comment'>-- heapSort :: Ord a =&gt; Heap a -&gt; [a]</span>
-<span class=hs-linenum>267: </span><span class='hs-comment'>-- heapSort t = unfoldr deleteMin2 t</span>
-<span class=hs-linenum>268: </span>
-<span class=hs-linenum>269: </span><span class='hs-comment'>-- isOrdered :: Ord a =&gt; [a] -&gt; Bool</span>
-<span class=hs-linenum>270: </span><span class='hs-comment'>-- isOrdered [] = True</span>
-<span class=hs-linenum>271: </span><span class='hs-comment'>-- isOrdered [_] = True</span>
-<span class=hs-linenum>272: </span><span class='hs-comment'>-- isOrdered (x:y:xys) = x &lt;= y &amp;&amp; isOrdered (y:xys) -- allowing duplicated keys</span>
+<span class=hs-linenum>239: </span>
+<span class=hs-linenum>240: </span><span class='hs-comment'>-- {-| Checking validity of a heap.</span>
+<span class=hs-linenum>241: </span><span class='hs-comment'>-- -}</span>
+<span class=hs-linenum>242: </span>
+<span class=hs-linenum>243: </span><span class='hs-comment'>-- valid :: Ord a =&gt; Heap a -&gt; Bool</span>
+<span class=hs-linenum>244: </span><span class='hs-comment'>-- valid t = isOrdered (heapSort t)</span>
+<span class=hs-linenum>245: </span>
+<span class=hs-linenum>246: </span><span class='hs-comment'>-- heapSort :: Ord a =&gt; Heap a -&gt; [a]</span>
+<span class=hs-linenum>247: </span><span class='hs-comment'>-- heapSort t = unfoldr deleteMin2 t</span>
+<span class=hs-linenum>248: </span>
+<span class=hs-linenum>249: </span><span class='hs-comment'>-- isOrdered :: Ord a =&gt; [a] -&gt; Bool</span>
+<span class=hs-linenum>250: </span><span class='hs-comment'>-- isOrdered [] = True</span>
+<span class=hs-linenum>251: </span><span class='hs-comment'>-- isOrdered [_] = True</span>
+<span class=hs-linenum>252: </span><span class='hs-comment'>-- isOrdered (x:y:xys) = x &lt;= y &amp;&amp; isOrdered (y:xys) -- allowing duplicated keys</span>
 </pre>
 </body>
 </html>
