@@ -34,20 +34,35 @@ import Prelude hiding (minimum, maximum, null)
 import qualified Prelude as L (null)
 
 {-@ type Nat = {v:Int | 0 <= v} @-}
+{-@ type Pos = {v:Int | 1 <= v} @-}
+
+-- {-@ mapList :: (a -> b) -> [a] -> [b] / [1] @-}
+-- mapList :: (a -> b) -> [a] -> [b]
+-- mapList f [] = []
+-- mapList f (x:xs) = f x : mapList f xs
+
+{-@ measure sumSizeList @-}
+{-@ sumSizeList :: [Tree a] -> Nat @-}
+sumSizeList :: [Tree a] -> Int
+sumSizeList [] = 0
+sumSizeList (x:xs) = size x + sumSizeList xs
 
 {-@ data Tree a =
     Node
         { rank :: Nat
         , root :: a
         , subtrees :: [BoundedTree a root]
+        , size :: {v:Pos | v == 1 + sumSizeList subtrees}
         }
 @-}
+        -- , size :: {v:Pos | v == 1 + sum (map size subtrees)}
 
 data Tree a =
     Node
         { rank :: Int
         , root :: a
         , subtrees :: [Tree a]
+        , size :: Int
         }
 
 newtype Heap a = Heap [Tree a]
@@ -55,11 +70,10 @@ newtype Heap a = Heap [Tree a]
 -- | Trees with value less than X
 {-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
 
-
 {-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> BoundedTree a (root t) @-}
 treeIsBoundedByItsRootLemma :: Tree a -> Tree a
-treeIsBoundedByItsRootLemma (Node {rank=r, root=x, subtrees=ts}) =
-  Node {rank=r, root=x, subtrees=ts}
+treeIsBoundedByItsRootLemma (Node {rank=r, root=x, subtrees=ts, size=sz}) =
+  Node {rank=r, root=x, subtrees=ts, size=sz}
 
 {-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> BoundedTree a y -> BoundedTree a x @-}
 boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
@@ -75,16 +89,18 @@ boundedTreeTransitivityLemma x y tree = tree
 assert :: Bool -> a -> a
 assert _ x = x
 
+-- TODO add size to link's refinement type
 {-@ link :: Tree a -> Tree a -> Tree a @-}
-link t1@(Node {rank=r1, root=x1, subtrees=ts1}) t2@(Node {rank=r2, root=x2, subtrees=ts2})
+link :: Ord a => Tree a -> Tree a -> Tree a
+link t1@(Node {rank=r1, root=x1, subtrees=ts1, size=sz1}) t2@(Node {rank=r2, root=x2, subtrees=ts2, size=sz2})
   | x1 <= x2  =
     let t2BoundedByX2 = treeIsBoundedByItsRootLemma t2 in
     let t2BoundedByX1 = boundedTreeTransitivityLemma x1 x2 t2BoundedByX2 in
-    Node (r1+1) x1 (t2BoundedByX1:ts1)
+    Node (r1+1) x1 (t2BoundedByX1:ts1) (sz1 + sz2)
   | otherwise =
     let t1BoundedByX1 = treeIsBoundedByItsRootLemma t1 in
     let t1BoundedByX2 = boundedTreeTransitivityLemma x2 x1 t1BoundedByX1 in
-      Node (r2+1) x2 (t1BoundedByX2:ts2)
+    Node (r2+1) x2 (t1BoundedByX2:ts2) (sz1 + sz2)
 
 {-@ empty :: Heap a @-}
 empty :: Heap a
@@ -97,7 +113,7 @@ null (Heap ts) = L.null ts
 
 {-@ singleton :: a -> Heap a @-}
 singleton :: a -> Heap a
-singleton x = Heap [Node 0 x []]
+singleton x = Heap [Node 0 x [] 1]
 
 {-| Insertion. Worst-case: O(log N), amortized: O(1)
 
@@ -131,7 +147,7 @@ sumNatList (x:xs) = sumNat x (sumNatList xs)
 
 {-@ insert :: Ord a => a -> Heap a -> Heap a @-}
 insert :: Ord a => a -> Heap a -> Heap a
-insert x (Heap ts) = Heap (insert' (Node 0 x []) ts)
+insert x (Heap ts) = Heap (insert' (Node 0 x [] 1) ts)
 
 {-@ insert' :: Ord a => Tree a -> [Tree a] -> [Tree a] @-}
 insert' :: Ord a => Tree a -> [Tree a] -> [Tree a]
@@ -199,7 +215,7 @@ deleteMin :: Ord a => Heap a -> Heap a
 deleteMin (Heap ts) =
   case deleteMin' ts of
     Nothing                  -> empty
-    Just (Node _ _ ts1, ts2) -> Heap (merge' (reverse ts1) ts2)
+    Just (Node _ _ ts1 _, ts2) -> Heap (merge' (reverse ts1) ts2)
 
 {-@ deleteMin2 :: Ord a => Heap a -> Maybe (a, Heap a) @-}
 deleteMin2 :: Ord a => Heap a -> Maybe (a, Heap a)
