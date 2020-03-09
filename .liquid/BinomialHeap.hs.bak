@@ -93,7 +93,6 @@ boundedTreeTransitivityLemma x y tree = tree
 assert :: Bool -> a -> a
 assert _ x = x
 
--- TODO add size to link's refinement type
 {-@ link :: t1:(Tree a) -> t2:(Tree a) -> {v:Tree a | size v == size t1 + size t2} @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
 link t1@(Node {rank=r1, root=x1, subtrees=ts1, size=sz1}) t2@(Node {rank=r2, root=x2, subtrees=ts2, size=sz2})
@@ -110,7 +109,6 @@ link t1@(Node {rank=r1, root=x1, subtrees=ts1, size=sz1}) t2@(Node {rank=r2, roo
 empty :: Heap a
 empty = Heap []
 
--- {-@ null :: h:(Heap a) -> {v:Bool | v <=> h == empty} @-}
 {-@ null :: h:(Heap a) -> {v:Bool | v <=> heapSize h == 0} @-}
 null :: Heap a -> Bool
 null h = heapSize h == 0
@@ -151,14 +149,7 @@ fromList (x:xs) = insert x (fromList xs)
 
 -- ----------------------------------------------------------------
 
--- {-| Creating a list from a heap. Worst-case: O(N)
-
--- >>> let xs = [5,3,5]
--- >>> length (toList (fromList xs)) == length xs
--- True
--- >>> toList empty
--- []
--- -}
+{-| Creating a list from a heap. Worst-case: O(N) -}
 
 -- {-@ toList :: Ord a => Heap a -> [a] @-}
 -- toList :: Ord a => Heap a -> [a]
@@ -167,23 +158,34 @@ fromList (x:xs) = insert x (fromList xs)
 --     Just (x, h) -> x : toList h
 --     Nothing -> []
 
+-- {-@ type SubtreeList a X = > @-}
 
+-- {-@ subtreesChildrenAreSmaller :: Tree a -> ts:([Tree a]<{\x -> size x <= sumSizeList ts}>) @-}
+-- subtreesChildrenAreSmaller :: Tree a -> [Tree a]
+-- subtreesChildrenAreSmaller t = subtrees t
+  -- case subtrees t of
+  --   [] -> []
+  --   (s:ss) -> subtreesChildrenAreSmaller s : concatMap subtreesChildrenAreSmaller ss
+
+-- sumSizeList (subtrees t) < size t
+-- ts:([Tree a]<{\t -> size t <= sumSizeList ts}>)
+
+-- {-@ data [a]<p :: Int -> Bool> = KV { keyVals :: [(Int<p>, v)] } @-}
+-- data Assoc v = KV [(Int, v)]
+
+
+-- {-@ toList :: Ord a => Heap a -> [a] @-}
 -- toList :: Heap a -> [a]
 -- toList (Heap ts) = concatMap toList' ts
 
--- {-@ toList' :: Tree a -> [a] @-}
--- toList' (Node _ x []) = [x]
--- toList' (Node _ x ts) = x : concatMap toList' ts
+-- {-@ toList' :: t:Tree a -> [a] / [size t] @-}
+-- toList' :: Tree a -> [a]
+-- toList' (Node _ x [] _) = [x]
+-- toList' (Node _ x ts _) = x : concatMap toList' ts
 
 -- ----------------------------------------------------------------
 
 -- {-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N)
-
--- >>> minimum (fromList [3,5,1])
--- Just 1
--- >>> minimum empty
--- Nothing
--- -}
 
 {-@ minimum :: NEHeap a -> a @-}
 minimum :: Ord a => Heap a -> a
@@ -191,13 +193,7 @@ minimum = root . fst . deleteMin' . unheapNonempty
 
 -- ----------------------------------------------------------------
 
--- {-| Deleting the minimum element. Worst-case: O(log N), amortized: O(log N)
-
--- >>> deleteMin (fromList [5,3,7]) == fromList [5,7]
--- True
--- >>> deleteMin empty == empty
--- True
--- -}
+{-| Deleting the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
 {-@ reverseHeapList :: xs:[Tree a] -> {v:[Tree a] | sumSizeList v == sumSizeList xs} @-}
 reverseHeapList :: [Tree a] -> [Tree a]
