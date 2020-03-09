@@ -33,21 +33,20 @@ import Data.Maybe
 import Prelude hiding (minimum, maximum, null)
 import qualified Prelude as L (null)
 
-{-@ type Nat = {v:Int | 0 <= v} @-}
-{-@ type Pos = {v:Int | 1 <= v} @-}
+{-@ type AtLeast X = {v:Int | X <= v} @-}
+{-@ type Nat = AtLeast 0 @-}
+{-@ type Pos = AtLeast 1 @-}
 
 {-@ measure sumSizeList @-}
-{-@ sumSizeList :: [Tree a] -> Nat @-}
+{-@ sumSizeList :: xs:[Tree a] -> {v:Nat | len xs <= v} @-}
 sumSizeList :: [Tree a] -> Int
 sumSizeList [] = 0
 sumSizeList (x:xs) = size x + sumSizeList xs
 
 {-@ measure heapSize @-}
-{-@ heapSize :: Heap a -> Nat @-}
+{-@ heapSize :: h:(Heap a) -> {v:Nat | len (unheap h) <= v} @-}
 heapSize :: Heap a -> Int
-heapSize h =
-  case h of
-    Heap ts -> sumSizeList ts
+heapSize (Heap ts) = sumSizeList ts
 
 {-@ data Tree a =
     Node
@@ -69,7 +68,7 @@ data Tree a =
 {-@ data Heap a = Heap { unheap :: [Tree a] } @-}
 data Heap a = Heap { unheap :: [Tree a] }
 
-{-@ type NEHeap a = {h:Heap a | 0 < heapSize h} @-}
+{-@ type NEHeap a = {h:Heap a | 0 < len (unheap h)} @-}
 
 -- | Trees with value less than X
 {-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
@@ -96,6 +95,14 @@ boundedTreeListTransitivityLemma x y ts = ts
 {-@ assert :: {v:Bool | v} -> a -> a @-}
 assert :: Bool -> a -> a
 assert _ x = x
+
+{-@ assertBoundedTree :: x:a -> BoundedTree a x -> b -> b @-}
+assertBoundedTree :: a -> Tree a -> b -> b
+assertBoundedTree _ _ x = x
+
+{-@ assertBoundedTreeList :: x:a -> [BoundedTree a x] -> b -> b @-}
+assertBoundedTreeList :: a -> [Tree a] -> b -> b
+assertBoundedTreeList _ _ x = x
 
 {-@ link :: t1:(Tree a) -> t2:(Tree a) -> {v:Tree a | size v == size t1 + size t2} @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
@@ -187,15 +194,11 @@ fromList (x:xs) = insert x (fromList xs)
 -- toList' (Node _ x [] _) = [x]
 -- toList' (Node _ x ts _) = x : concatMap toList' ts
 
--- ----------------------------------------------------------------
-
--- {-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N)
+{-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
 {-@ minimum :: NEHeap a -> a @-}
 minimum :: Ord a => Heap a -> a
 minimum = root . fst . deleteMin' . unheapNonempty
-
--- ----------------------------------------------------------------
 
 {-| Deleting the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
@@ -218,42 +221,31 @@ deleteMin h =
   let (Node _ _ ts1 _, ts2) = deleteMin' (unheapNonempty h) in
   Heap (merge' (reverseHeapList ts1) ts2)
 
-{-@ deleteMin2 :: h:NEHeap a -> {v:(a, Heap a) | 1 + heapSize (snd v) == heapSize h} @-}
+{-@ deleteMin2 :: h:NEHeap a -> {v:(a, Heap {x:a | (fst v) <= x}) | 1 + heapSize (snd v) == heapSize h} @-}
 deleteMin2 :: Ord a => Heap a -> (a, Heap a)
-deleteMin2 h = (minimum h, deleteMin h)
+deleteMin2 h =
+  let (Node _ minElt ts1 _, ts2) = deleteMin' (unheapNonempty h) in
+  (minElt, Heap (merge' (reverseHeapList ts1) ts2))
 
 {-@ deleteMin' :: {xs:[Tree a] | 0 < len xs} -> {v:(Tree a, [BoundedTree a (root (fst v))]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
--- {-@ deleteMin' :: {xs:[Tree a] | 0 < len xs} -> {v:(Tree a, [Tree a]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
 deleteMin' :: Ord a => [Tree a] -> (Tree a, [Tree a])
 deleteMin' [t] = (t, [])
 deleteMin' (t:ts) =
-  let acc = deleteMin' ts in
-  let t' = fst acc in
-  let ts' = snd acc in
-  let x' = root t' in
+  let (t', ts') = deleteMin' ts in
   let x = root t in
+  let x' = root t' in
   let tBounded = treeIsBoundedByItsRootLemma t in
   let tBounded' = treeIsBoundedByItsRootLemma t' in
   if x < x'
-  then (
-    let tBoundedByX = boundedTreeTransitivityLemma x x' tBounded' in
-    let tsBoundedByX = boundedTreeListTransitivityLemma x x' ts' in
-    (t, tBoundedByX : tsBoundedByX)
-  )
-  else (
-    let tBoundedByX' = boundedTreeTransitivityLemma x' x tBounded in
-    (t', tBoundedByX' : ts')
-  )
+  then
+    let hd = boundedTreeTransitivityLemma x x' tBounded' in
+    let tl = boundedTreeListTransitivityLemma x x' ts' in
+    (t, hd:tl)
+  else
+    let hd = boundedTreeTransitivityLemma x' x tBounded in
+    (t', hd:ts')
 
-{-@ assertBoundedTree :: x:a -> BoundedTree a x -> b -> b @-}
-assertBoundedTree :: a -> Tree a -> b -> b
-assertBoundedTree _ _ x = x
 
-{-@ assertBoundedTreeList :: x:a -> [BoundedTree a x] -> b -> b @-}
-assertBoundedTreeList :: a -> [Tree a] -> b -> b
-assertBoundedTreeList _ _ x = x
-
--- {-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> t:(BoundedTree a y) -> {v:BoundedTree a x | size v == size t} @-}
 
 {-| Merging two heaps. Worst-case: O(log N), amortized: O(log N)
 
@@ -285,8 +277,28 @@ merge' ts1@(t1:ts1') ts2@(t2:ts2')
 -- valid :: Ord a => Heap a -> Bool
 -- valid t = isOrdered (heapSort t)
 
--- heapSort :: Ord a => Heap a -> [a]
--- heapSort t = unfoldr deleteMin2 t
+{-@ heapSort :: h:(Heap a) -> {v:[a] | len v == heapSize h} / [heapSize h] @-}
+heapSort :: Ord a => Heap a -> [a]
+heapSort (Heap []) = []
+heapSort h@(Heap (_:_)) =
+  let (minElt, h') = deleteMin2 h in
+  minElt : heapSort h'
+
+-- {-@ heapSizeNE :: {xs:[Tree a] | 0 < len xs} -> {v:NEHeap a | heapSize v == sumSizeList xs} @-}
+-- heapSizeNE :: [Tree a] -> Heap a
+-- heapSizeNE ts@(_:_) = Heap ts
+
+-- {-@ sumSizeList :: xs:[Tree a] -> {v:Nat | len xs <= v} @-}
+
+-- {-@ sumSizeListNE :: {xs:[Tree a] | 0 < len xs} -> {ts:[Tree a] | len xs <= sumSizeList ts} @-}
+-- sumSizeListNE :: [Tree a] -> [Tree a]
+-- sumSizeListNE ts =
+--   -- assert (len ts <= sumSizeList ts) $
+--   ts
+
+-- {-@ unheapNonempty :: h:(NEHeap a) -> {v:[Tree a] | 0 < len v && sumSizeList v == heapSize h} @-}
+-- unheapNonempty :: Heap a -> [Tree a]
+-- unheapNonempty (Heap ts@(_:_)) = ts
 
 -- isOrdered :: Ord a => [a] -> Bool
 -- isOrdered [] = True

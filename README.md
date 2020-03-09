@@ -17,6 +17,7 @@ Don't worry about using parts of definitions before they're defined
 Use `assert` to figure out what the SMT solver has already inferred
 Don't use newtype ever
 Sometimes explicit recursion is better than fold, e.g. fromList
+Avoid indirection as much as possible
 
 
 ## Interesting things
