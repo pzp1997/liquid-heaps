@@ -27,10 +27,11 @@ module Data.Heap.Binominal where
 --   , heapSort
 --   ) where
 
+import Control.Applicative hiding (empty)
+import Data.List (foldl', unfoldr)
+import Data.Maybe
 import Prelude hiding (minimum, maximum, null)
-import qualified Data.List as List
-import qualified Data.Set as S
-import Data.Set (Set)
+import qualified Prelude as L (null)
 
 {-@ type AtLeast X = {v:Int | X <= v} @-}
 {-@ type Nat = AtLeast 0 @-}
@@ -38,32 +39,14 @@ import Data.Set (Set)
 
 {-@ type IncrList a = [a]<{\xi xj -> xi <= xj}> @-}
 
-{-@ measure mapSize @-}
-{-@ mapSize :: xs:[Tree a] -> {v:[Pos] | len v = len xs} @-}
-mapSize :: [Tree a] -> [Int]
-mapSize [] = []
-mapSize (x:xs) = size x : mapSize xs
-
-{-@ measure sumPositives @-}
-{-@ sumPositives :: xs:[Pos] -> {v:Nat | len xs <= v} @-}
-sumPositives :: [Int] -> Int
-sumPositives [] = 0
-sumPositives (x:xs) = x + sumPositives xs
-
 {-@ measure sumSizeList @-}
 {-@ sumSizeList :: xs:[Tree a] -> {v:Nat | len xs <= v} @-}
 sumSizeList :: [Tree a] -> Int
 sumSizeList [] = 0
-sumSizeList ts = sumPositives (mapSize ts)
-
--- sumSizeList (t:ts) == size t + sumSizeList ts
-
--- {-@ sumSizeLemma :: t:(Tree a) -> ts:[Tree a] -> {v:[Tree a] | v = (t:ts) && sumSizeList (t:ts) = size t + sumSizeList ts} @-}
--- sumSizeLemma :: Tree a -> [Tree a] -> [Tree a]
--- sumSizeLemma t ts = t:ts
+sumSizeList (x:xs) = size x + sumSizeList xs
 
 {-@ measure heapSize @-}
-{-@ heapSize :: h:(Heap a) -> Nat @-}
+{-@ heapSize :: h:(Heap a) -> {v:Nat | len (unheap h) <= v} @-}
 heapSize :: Heap a -> Int
 heapSize (Heap ts) = sumSizeList ts
 
@@ -105,33 +88,6 @@ boundedTreeTransitivityLemma x y tree = tree
 {-@ boundedTreeListTransitivityLemma :: x:a -> {y:a | x <= y} -> ts:[BoundedTree a y] -> {v:[BoundedTree a x] | sumSizeList v == sumSizeList ts} @-}
 boundedTreeListTransitivityLemma :: a -> a -> [Tree a] -> [Tree a]
 boundedTreeListTransitivityLemma x y ts = ts
-
--- {-@ measure elts @-}
--- {-@ elts :: Heap a -> Set a @-}
--- elts :: (Ord a) => Heap a -> Set a
--- elts (Heap (t1:ts)) = eltsTree t1
-
-
--- elts (Heap []) = S.empty
--- elts (Heap (t1:ts)) = List.foldl' (\acc t -> S.union (eltsTree t) acc) S.empty (t1:ts)
-
--- {-@ measure eltsTree @-}
--- {-@ eltsTree :: t:(Tree a) -> Set a / [size t] @-}
--- eltsTree :: (Ord a) => Tree a -> Set a
--- eltsTree (Node r x ts _) = S.singleton x
--- eltsTree (Node r x (t:ts) sz) =
---   let remainder = Node r x ts (sz - size t) in
---   S.union (S.union (S.singleton x) (eltsTree t)) (eltsTree remainder)
-
--- {-@ measure eltsTree @-}
--- {-@ eltsTree :: t:(Tree a) -> Set a / [size t] @-}
--- eltsTree :: (Ord a) => Tree a -> Set a
--- eltsTree (Node r x ts sz) =
---   assert (sz == 1 + sum (map size ts)) $
---   List.foldl' S.union (S.singleton x) (map eltsTree ts)
-
--- {-@ predicate EqElts X Y = ((elts X) = (elts Y)) @-}
--- {-@ type HeapS a S = {v:[a] | elts v = S} @-}
 
 -- instance (Eq a, Ord a) => Eq (Heap a) where
 --     h1 == h2 = heapSort h1 == heapSort h2
@@ -324,7 +280,8 @@ merge' ts1@(t1:ts1') ts2@(t2:ts2')
 -- valid :: Ord a => Heap a -> Bool
 -- valid t = isOrdered (heapSort t)
 
--- TODO prove that the elements are the same
+-- TODO prove that the return list isOrdered and elements are the same
+-- TODO write a function from [a] -> [a] that does this
 {-@ heapSort :: h:(Heap a) -> {v:IncrList a | len v == heapSize h} / [heapSize h] @-}
 heapSort :: Ord a => Heap a -> [a]
 heapSort (Heap []) = []
@@ -336,6 +293,21 @@ heapSort h@(Heap (_:_)) =
 sortUsingHeap :: Ord a => [a] -> [a]
 sortUsingHeap = heapSort . fromList
 
+-- {-@ heapSizeNE :: {xs:[Tree a] | 0 < len xs} -> {v:NEHeap a | heapSize v == sumSizeList xs} @-}
+-- heapSizeNE :: [Tree a] -> Heap a
+-- heapSizeNE ts@(_:_) = Heap ts
+
+-- {-@ sumSizeList :: xs:[Tree a] -> {v:Nat | len xs <= v} @-}
+
+-- {-@ sumSizeListNE :: {xs:[Tree a] | 0 < len xs} -> {ts:[Tree a] | len xs <= sumSizeList ts} @-}
+-- sumSizeListNE :: [Tree a] -> [Tree a]
+-- sumSizeListNE ts =
+--   -- assert (len ts <= sumSizeList ts) $
+--   ts
+
+-- {-@ unheapNonempty :: h:(NEHeap a) -> {v:[Tree a] | 0 < len v && sumSizeList v == heapSize h} @-}
+-- unheapNonempty :: Heap a -> [Tree a]
+-- unheapNonempty (Heap ts@(_:_)) = ts
 
 -- {-@ measure isOrdered @-}
 -- {-@ isOrdered :: [a] -> Bool @-}
