@@ -37,6 +37,8 @@ import qualified Prelude as L (null)
 {-@ type Nat = AtLeast 0 @-}
 {-@ type Pos = AtLeast 1 @-}
 
+{-@ type IncrList a = [a]<{\xi xj -> xi <= xj}> @-}
+
 {-@ measure sumSizeList @-}
 {-@ sumSizeList :: xs:[Tree a] -> {v:Nat | len xs <= v} @-}
 sumSizeList :: [Tree a] -> Int
@@ -274,15 +276,22 @@ merge' ts1@(t1:ts1') ts2@(t2:ts2')
 -- {-| Checking validity of a heap.
 -- -}
 
+-- {-@ valid :: Ord a => Heap a -> {v:Bool | v} @-}
 -- valid :: Ord a => Heap a -> Bool
 -- valid t = isOrdered (heapSort t)
 
-{-@ heapSort :: h:(Heap a) -> {v:[a] | len v == heapSize h} / [heapSize h] @-}
+-- TODO prove that the return list isOrdered and elements are the same
+-- TODO write a function from [a] -> [a] that does this
+{-@ heapSort :: h:(Heap a) -> {v:IncrList a | len v == heapSize h} / [heapSize h] @-}
 heapSort :: Ord a => Heap a -> [a]
 heapSort (Heap []) = []
 heapSort h@(Heap (_:_)) =
   let (minElt, h') = deleteMin2 h in
   minElt : heapSort h'
+
+{-@ sortUsingHeap :: xs:[a] -> {v:IncrList a | len v == len xs} @-}
+sortUsingHeap :: Ord a => [a] -> [a]
+sortUsingHeap = heapSort . fromList
 
 -- {-@ heapSizeNE :: {xs:[Tree a] | 0 < len xs} -> {v:NEHeap a | heapSize v == sumSizeList xs} @-}
 -- heapSizeNE :: [Tree a] -> Heap a
@@ -300,7 +309,16 @@ heapSort h@(Heap (_:_)) =
 -- unheapNonempty :: Heap a -> [Tree a]
 -- unheapNonempty (Heap ts@(_:_)) = ts
 
+-- {-@ measure isOrdered @-}
+-- {-@ isOrdered :: [a] -> Bool @-}
 -- isOrdered :: Ord a => [a] -> Bool
 -- isOrdered [] = True
--- isOrdered [_] = True
--- isOrdered (x:y:xys) = x <= y && isOrdered (y:xys) -- allowing duplicated keys
+-- isOrdered [x] = True
+-- isOrdered (x:xs) = x <= (headNE xs) && isOrdered xs
+
+-- {-@ measure headNE @-}
+-- {-@ headNE :: {v:[a] | 0 < len v} -> a @-}
+-- headNE :: [a] -> a
+-- headNE (x:_) = x
+
+-- {-@ isOrderedIfIncrList :: IncrList a -> {v:[a] | isOrdered v} @-}
