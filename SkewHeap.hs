@@ -4,7 +4,7 @@
   - the fun of programming
 -}
 
-module Data.Heap.Skew where 
+module Data.Heap.Skew where
 --   -- * Data structures
 --     Skew(..)
 --   -- * Creating heaps
@@ -33,8 +33,8 @@ import qualified Data.Set as S
 import Data.Set (Set)
 
 ----------------------------------------------------------------
-{-@ type Bounded a X = {n : a | X <= n } @-}
-{-@ data Skew a = Leaf | Node (root :: a) (left :: Skew (Bounded a root)) (right :: Skew (Bounded a root)) @-}
+{-@ type AtLeast a X = {v:a | X <= v} @-}
+{-@ data Skew a = Leaf | Node (root :: a) (left :: Skew (AtLeast a root)) (right :: Skew (AtLeast a root)) @-}
 data Skew a = Leaf | Node a (Skew a) (Skew a) deriving Show
 
 -- -- ----------------------------------------------------------------
@@ -51,18 +51,16 @@ elts (Node rt l r) = S.union (S.singleton rt) (S.union (elts l) (elts r))
 -- set of a list
 {-@ measure eltsList @-}
 {-@ eltsList :: [a] -> Set a @-}
-eltsList :: Ord a => [a] -> Set a 
+eltsList :: Ord a => [a] -> Set a
 eltsList [] = S.empty
 eltsList (x : xs) = S.union (S.singleton x) (eltsList xs)
 
 {-@ predicate EqElts X Y = ((elts X) = (elts Y)) @-}
 
 -- assertions
-{-@ assert :: {v:Bool | v} -> a -> a @-}
+{-@ assert :: TT -> a -> a @-}
 assert :: Bool -> a -> a
 assert _ x = x
-
-{-@ type Nat = Bounded Int 0 @-}
 
 {- Size of a heap -}
 
@@ -102,7 +100,7 @@ insert x t = merge (singleton x) t
 -- -- ----------------------------------------------------------------
 
 -- -- {-| Creating a heap from a list. -}
-{-@ fromList :: l:[a] -> {r: Skew a | size r = len l && elts r = S.fromList l} @-}
+{-@ fromList :: l:[a] -> {r: Skew a | size r = len l && elts r = eltsList l} @-}
 fromList :: Ord a => [a] -> Skew a
 fromList [] = Leaf
 fromList (x : xs) = insert x (fromList xs)
@@ -132,8 +130,8 @@ fromList (x : xs) = insert x (fromList xs)
 -- eltsSubtreeLemma :: Skew a -> (a, Skew a, Skew a)
 -- eltsSubtreeLemma (Node x l r) = (x, l, r)
 
--- -- I think Liquid Haskell should have enough info (especially with the lemma) to infer the set relation, not sure why it isn't
--- -- The lemma causes it to not be obviously terminating, though that is easily fixable
+-- I think Liquid Haskell should have enough info (especially with the lemma) to infer the set relation, not sure why it isn't
+-- The lemma causes it to not be obviously terminating, though that is easily fixable
 -- {-@ toList :: s:(Skew a) ->  {l: [a] | len l = size s && elts s = eltsList l} @-}
 -- toList :: Skew a -> [a]
 -- toList Leaf = []
@@ -167,12 +165,12 @@ deleteMin2 (Node x l r)    = (x, merge l r)
 -- -- {-| Merging two heaps-}
 
 -- A nonempty skew heap is bounded by its root
-{-@ skewBoundedByRoot :: {s:(Skew a) | 0 < size s} -> {r : Skew (Bounded a (minimum s)) | size s = size r && EqElts s r} @-}
+{-@ skewBoundedByRoot :: {s:(Skew a) | 0 < size s} -> {r : Skew (AtLeast a (minimum s)) | size s = size r && EqElts s r} @-}
 skewBoundedByRoot :: Skew a -> Skew a
 skewBoundedByRoot (Node rt l r) = Node rt l r
 
 -- Boundedness is transitive
-{-@ boundedSkewTransitive :: x:a -> s:(Skew (Bounded a x)) -> {y: a | y <= x} -> {r : Skew (Bounded a y) | size s = size r && EqElts s r} @-}
+{-@ boundedSkewTransitive :: x:a -> s:(Skew (AtLeast a x)) -> {y: a | y <= x} -> {r : Skew (AtLeast a y) | size s = size r && EqElts s r} @-}
 boundedSkewTransitive :: a -> Skew a -> a -> Skew a
 boundedSkewTransitive _ s _ = s
 
@@ -182,7 +180,7 @@ merge t1 Leaf = t1
 merge Leaf t2 = t2
 merge t1@(Node rt1 l1 r1) t2@(Node rt2 l2 r2) =
     if rt1 <= rt2 then
-        Node rt1 r1 (merge l1 (boundedSkewTransitive rt2 (skewBoundedByRoot (Node rt2 l2 r2)) rt1)) 
+        Node rt1 r1 (merge l1 (boundedSkewTransitive rt2 (skewBoundedByRoot (Node rt2 l2 r2)) rt1))
     else Node rt2 r2 (merge l2 (boundedSkewTransitive rt1 (skewBoundedByRoot (Node rt1 l1 r1)) rt2))
 
 -- -- ----------------------------------------------------------------
@@ -197,12 +195,16 @@ merge t1@(Node rt1 l1 r1) t2@(Node rt2 l2 r2) =
 
 {-@ type IncrList a = [a]<{\xi xj -> xi <= xj}> @-}
 
-{-@ heapSort :: s:(Skew a) -> {v: IncrList a | len v = size s && eltsList v = elts s} / [size s] @-}
+{-@ heapSort :: s:(Skew a) -> {v:IncrList a | len v = size s && eltsList v = elts s} / [size s] @-}
 heapSort :: Ord a => Skew a -> [a]
 heapSort Leaf = []
 heapSort h@(Node _ _ _) =
     let (minElt, h') = deleteMin2 h in
         minElt : heapSort h'
+
+{-@ sortUsingHeap :: xs:[a] -> {v:IncrList a | len v = len xs && eltsList v = eltsList xs} @-}
+sortUsingHeap :: Ord a => [a] -> [a]
+sortUsingHeap = heapSort . fromList
 
 -- -- isOrdered :: Ord a => [a] -> Bool
 -- -- isOrdered [] = True
