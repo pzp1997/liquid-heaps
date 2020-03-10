@@ -46,7 +46,7 @@ data Skew a = Leaf | Node a (Skew a) (Skew a) deriving Show
 -- -- {-| Empty heap.
 -- -- -}
 
-{-@ empty :: Skew a@-}
+{-@ empty :: {r: Skew a | size r = 0}@-}
 empty :: Skew a
 empty = Leaf
 
@@ -66,7 +66,7 @@ empty = Leaf
 -- -- {-| Singleton heap.
 -- -- -}
 
-{-@ singleton :: a -> Skew a @-}
+{-@ singleton :: a -> {r: Skew a | size r = 1} @-}
 singleton :: a -> Skew a
 singleton x = Node x Leaf Leaf
 
@@ -80,8 +80,9 @@ singleton x = Node x Leaf Leaf
 -- -- True
 -- -- -}
 
--- -- insert :: Ord a => a -> Skew a -> Skew a
--- -- insert x t = merge (singleton x) t
+{-@ insert :: a -> s:(Skew a) -> {r: Skew a | size r = 1 + size s} @-}
+insert :: Ord a => a -> Skew a -> Skew a
+insert x t = merge (singleton x) t
 
 -- -- ----------------------------------------------------------------
 
@@ -94,9 +95,10 @@ singleton x = Node x Leaf Leaf
 -- -- >>> fromList [5,3] == fromList [5,3]
 -- -- True
 -- -- -}
-
--- -- fromList :: Ord a => [a] -> Skew a
--- -- fromList = foldl' (flip insert) empty
+{-@ fromList :: l:[a] -> {r: Skew a | size r = len l} @-}
+fromList :: Ord a => [a] -> Skew a
+fromList [] = Leaf
+fromList (x : xs) = insert x (fromList xs)
 
 -- -- ----------------------------------------------------------------
 
@@ -148,9 +150,9 @@ minimum (Node x _ _) = x
 -- -- True
 -- -- -}
 
--- -- deleteMin :: Ord a => Skew a -> Skew a
--- -- deleteMin Leaf         = Leaf
--- -- deleteMin (Node l _ r) = merge l r
+{-@deleteMin ::  {s: Skew a | 0 < size s} -> {r: Skew a | size r + 1 = size s} @-}
+deleteMin :: Ord a => Skew a -> Skew a
+deleteMin (Node _ l r) = merge l r
 
 -- -- deleteMin2 :: Ord a => Skew a -> Maybe (a, Skew a)
 -- -- deleteMin2 Leaf = Nothing
@@ -184,26 +186,14 @@ skewBoundedByRoot (Node rt l r) = Node rt l r
 boundedSkewTransitive :: a -> Skew a -> a -> Skew a
 boundedSkewTransitive _ s _ = s
 
-{-@ merge ::t1:(Skew a) -> t2:(Skew a) -> Skew a  /[size t1 + size t2] @-}
+{-@ merge ::t1:(Skew a) -> t2:(Skew a) -> {r : Skew a | size r = size t1 + size t2}  /[size t1 + size t2] @-}
 merge :: Ord a => Skew a -> Skew a -> Skew a
 merge t1 Leaf = t1
 merge Leaf t2 = t2
 merge t1@(Node rt1 l1 r1) t2@(Node rt2 l2 r2) =
     if rt1 <= rt2 then
-        Node rt1 l1 (merge l1 (boundedSkewTransitive rt2 (skewBoundedByRoot (Node rt2 l2 r2)) rt1)) 
-    else Node rt2 l2 (merge l2 (boundedSkewTransitive rt1 (skewBoundedByRoot (Node rt1 l1 r1)) rt2))
-
--- {-@ merge :: Skew a -> Skew a -> Skew a @-}
--- merge :: Ord a => Skew a -> Skew a -> Skew a
--- merge t1 Leaf = t1
--- merge Leaf t2 = t2
--- merge t1@(Node rt1 l1 r1) t2@(Node rt2 l2 r2) =
---     if rt1 <= rt2 then Node rt1 l1 (merge l1 t2) 
---     else Node rt2 l2 (merge l2 t1)
-
--- join :: Ord a => Skew a -> Skew a -> Skew a
--- join (Node l x r) t = Node r x (merge l t)
--- join _ _ = error "join"
+        Node rt1 r1 (merge l1 (boundedSkewTransitive rt2 (skewBoundedByRoot (Node rt2 l2 r2)) rt1)) 
+    else Node rt2 r2 (merge l2 (boundedSkewTransitive rt1 (skewBoundedByRoot (Node rt1 l1 r1)) rt2))
 
 -- -- ----------------------------------------------------------------
 -- -- -- Basic operations
