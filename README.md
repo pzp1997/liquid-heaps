@@ -2,14 +2,13 @@
 
 Coming up with lemmas: treeIsBoundedByItsRootLemma, boundedTreeTransitivityLemma
 
-{-@ measure sumSizeList @-}
-{-@ sumSizeList :: [Tree a] -> Nat @-}
-sumSizeList :: [Tree a] -> Int
-sumSizeList
+It was tricky to figure out how to make `sumSizeList` a measure. At first we had it written as `sum . map size` but that's not a valid measure in LH.
+
 boundedSizeSubtreeLemma (for termination of elts)
-termination of elts was so challenging we couldn't do it, we provided a lot of lemmas
-that should imply the correct measure is decreasing, but Liquid Haskell could not evaluate this,
-so we marked the function "lazy" to ignore termination checking
+
+termination of elts was so challenging we couldn't do it, we provided a lot of lemmas that should imply the correct measure is decreasing, but Liquid Haskell could not evaluate this, so we marked the function "lazy" to ignore termination checking
+
+We needed some cleverness to express the rank property since the rank of a tree with no subtrees is 0 not 1. The trick was to create an intermediate measure `lubRank` to special case this
 
 ## Tips
 
@@ -25,11 +24,8 @@ Avoid indirection as much as possible
 assert sometimes magically proves things (like in sublistSizeLemma)
 abstract refinement types suck (are sometimes hard to deal with)
 
-
-
 ## Interesting things
 Tail recursive version of `reverseHeapList` was easier to verify
-
 
 ## Examples of effective assertion usage
 
