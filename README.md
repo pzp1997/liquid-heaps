@@ -6,6 +6,7 @@ Coming up with lemmas: treeIsBoundedByItsRootLemma, boundedTreeTransitivityLemma
 {-@ sumSizeList :: [Tree a] -> Nat @-}
 sumSizeList :: [Tree a] -> Int
 sumSizeList
+boundedSizeSubtreeLemma (for termination of elts)
 
 ## Tips
 
@@ -18,6 +19,9 @@ Use `assert` to figure out what the SMT solver has already inferred
 Don't use newtype ever
 Sometimes explicit recursion is better than fold, e.g. fromList
 Avoid indirection as much as possible
+assert sometimes magically proves things (like in sublistSizeLemma)
+abstract refinement types suck (are sometimes hard to deal with)
+
 
 
 ## Interesting things

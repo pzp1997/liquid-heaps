@@ -27,11 +27,10 @@ module Data.Heap.Binominal where
 --   , heapSort
 --   ) where
 
-import Control.Applicative hiding (empty)
-import Data.List (foldl', unfoldr)
-import Data.Maybe
 import Prelude hiding (minimum, maximum, null)
-import qualified Prelude as L (null)
+import qualified Data.List as List
+import qualified Data.Set as S
+import Data.Set (Set)
 
 {-@ type AtLeast X = {v:Int | X <= v} @-}
 {-@ type Nat = AtLeast 0 @-}
@@ -89,8 +88,35 @@ boundedTreeTransitivityLemma x y tree = tree
 boundedTreeListTransitivityLemma :: a -> a -> [Tree a] -> [Tree a]
 boundedTreeListTransitivityLemma x y ts = ts
 
+{-@ sublistSizeLemma :: t:(Tree a) -> ts:[Tree a] -> {v: Nat | v = size t + sumSizeList ts && sumSizeList ts < v } @-}
+sublistSizeLemma :: Tree a -> [Tree a] -> Int
+sublistSizeLemma x xs =
+  assert (0 < size x) $
+  sumSizeList (x : xs)
+
+{-@ type BoundedSizeTree a X = {t : Tree a | size t <= X}  @-}
+{-@ type BoundedSizeTrees a X = [BoundedSizeTree a X]  @-}
+
+{-@ subtreeTransitiveLemma :: x:Nat  -> BoundedSizeTrees a x -> {y: Nat | x <= y} -> BoundedSizeTrees a y @-}
+subtreeTransitiveLemma :: Int -> [Tree a] -> Int -> [Tree a]
+subtreeTransitiveLemma _ ts _ = ts
+
+{-@ consTreeLemma :: x:Nat ->BoundedSizeTree a x -> BoundedSizeTrees a x -> BoundedSizeTrees a x @-}
+consTreeLemma ::Int -> Tree a -> [Tree a] -> [Tree a]
+consTreeLemma _ t ts = t : ts
+
+{-@ boundedSizeSubtreeLemma :: l:[Tree a] -> BoundedSizeTrees a (sumSizeList l) @-}
+boundedSizeSubtreeLemma :: [Tree a] -> [Tree a]
+boundedSizeSubtreeLemma [] = []
+boundedSizeSubtreeLemma (t : ts) =
+  let ih = boundedSizeSubtreeLemma ts in
+  let sizetts = sublistSizeLemma t ts in
+  let sizets = sumSizeList ts in
+  let refinedSubtrees = subtreeTransitiveLemma sizets ih sizetts in
+  consTreeLemma sizetts t refinedSubtrees
 -- instance (Eq a, Ord a) => Eq (Heap a) where
 --     h1 == h2 = heapSort h1 == heapSort h2
+-- | sumSizeList l = sumSizeList v
 
 ----------------------------------------------------------------
 
