@@ -34,6 +34,7 @@ import Data.Set (Set)
 
 ----------------------------------------------------------------
 {-@ type AtLeast a X = {v:a | X <= v} @-}
+{-@ type Pos = GeInt 1 @-}
 {-@ data Skew a = Leaf | Node (root :: a) (left :: Skew (AtLeast a root)) (right :: Skew (AtLeast a root)) @-}
 data Skew a = Leaf | Node a (Skew a) (Skew a) deriving Show
 
@@ -109,35 +110,61 @@ fromList (x : xs) = insert x (fromList xs)
 
 -- Stuff about toList, which is not quite done - Liquid Haskell cannot verify the set relation
 
--- {-@ app :: l1:[a] -> l2:[a] -> {r: [a] | eltsList r = S.union (eltsList l1) (eltsList l2)} @-}
--- app :: [a] -> [a] -> [a]
--- app [] l2 = l2
--- app (x:t) l2 = x : (app t l2)
+{-@ app :: x:a -> l1:[a] -> l2:[a] -> {r: [a] | eltsList r = S.union (S.singleton x) (S.union (eltsList l1) (eltsList l2)) && len r = 1 + len l1 + len l2} @-}
+app :: a -> [a] -> [a] -> [a]
+app x [] l2 = x:l2
+app x (h:t) l2 = h : (app x t l2)
 
--- {-@ measure fst' @-}
--- fst' :: (a,b,c) -> a
--- fst' (x, _, _) = x
+-- {-@ measure eltsTriple @-}
+-- eltsTriple :: Ord a => (a, Skew a, Skew a) -> Set a
+-- eltsTriple (x, l, r) = S.union (S.singleton x) (S.union (elts l) (elts r))
 
--- {-@ measure snd' @-}
--- snd' :: (a,b,c) -> b
--- snd' (_, x, _) = x
+{-@ measure fst' @-}
+fst' :: (a,b,c) -> a
+fst' (x, _, _) = x
 
--- {-@ measure trd' @-}
--- trd' :: (a,b,c) -> c
--- trd' (_, _, x) = x
+{-@ measure snd' @-}
+snd' :: (a,b,c) -> b
+snd' (_, x, _) = x
 
--- {-@ eltsSubtreeLemma :: {s: Skew a | 0 < size s} -> {t: (a, Skew a, Skew a) | elts s = S.union (S.singleton (fst' t)) (S.union (elts (snd' t)) (elts (trd' t)))} @-}
--- eltsSubtreeLemma :: Skew a -> (a, Skew a, Skew a)
--- eltsSubtreeLemma (Node x l r) = (x, l, r)
+{-@ measure trd' @-}
+trd' :: (a,b,c) -> c
+trd' (_, _, x) = x
+
+-- {-@ measure sizeTriple @-}
+-- {-@ sizeTriple :: (a, Skew a, Skew a) -> Pos @-}
+-- sizeTriple :: (a, Skew a, Skew a) -> Int
+-- sizeTriple (_, l, r) =
+
+{-@ eltsSubtreeLemma :: {s: Skew a | 0 < size s} ->
+    {v:(a, Skew a, Skew a) |
+        (elts s = S.union (S.singleton (fst' v)) (S.union (elts (snd' v)) (elts (trd' v)))) &&
+        (size s = 1 + size (snd' v) + size (trd' v)) &&
+        (size (snd' v) < size s) &&
+        (size (trd' v) < size s)
+    }
+@-}
+eltsSubtreeLemma :: Skew a -> (a, Skew a, Skew a)
+eltsSubtreeLemma (Node x l r) = (x, l, r)
+
+{-@ measure len @-}
+{-@ len :: [a] -> Nat @-}
+len :: [a] -> Int
+len [] = 0
+len (_:xs) = 1 + len xs
 
 -- I think Liquid Haskell should have enough info (especially with the lemma) to infer the set relation, not sure why it isn't
 -- The lemma causes it to not be obviously terminating, though that is easily fixable
--- {-@ toList :: s:(Skew a) ->  {l: [a] | len l = size s && elts s = eltsList l} @-}
--- toList :: Skew a -> [a]
--- toList Leaf = []
--- toList n@(Node x l r) =
---     let (y, l', r') = eltsSubtreeLemma n in
---      y :  app (toList l') (toList r')
+{-@ toList :: s:(Skew a) -> {l: [a] | len l = size s && elts s = eltsList l} / [size s] @-}
+toList :: Skew a -> [a]
+toList Leaf = []
+toList s@(Node x l r) =
+    let (x', l', r') = eltsSubtreeLemma s in
+    let l1 = toList l' in
+    let l2 = toList r' in
+    -- assert (size s == 1 + size l' + size r') $
+    -- assert (size s == 1 + len l1 + len l2) $
+    app x' l1 l2
 
 -- -- ----------------------------------------------------------------
 

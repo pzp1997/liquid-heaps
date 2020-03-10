@@ -32,12 +32,9 @@ import qualified Data.List as List
 import qualified Data.Set as S
 import Data.Set (Set)
 
-{-@ type AtLeast X = {v:Int | X <= v} @-}
-{-@ type Nat = AtLeast 0 @-}
-{-@ type Pos = AtLeast 1 @-}
-
+{-@ type AtLeast a X = {n:a | X <= n} @-}
+{-@ type Pos = GeInt 1 @-}
 {-@ type NEList a = {xs:[a] | 0 < len xs} @-}
-
 {-@ type IncrList a = [a]<{\xi xj -> xi <= xj}> @-}
 
 {-@ measure sumSizeList @-}
@@ -46,10 +43,10 @@ sumSizeList :: [Tree a] -> Int
 sumSizeList [] = 0
 sumSizeList (x:xs) = size x + sumSizeList xs
 
--- {-@ measure maxNat @-}
+-- {-@ inline maxNat @-}
 -- {-@ maxNat :: x:Nat -> y:Nat -> {v:Nat | (x <= y => v == y) && (y <= x => v == x)} @-}
 -- maxNat :: Int -> Int -> Int
--- maxNat x y = max x y
+-- maxNat x y = if x < y then y else x
 
 {-@ measure maxRankList @-}
 -- {-@ maxRankList :: xs:[Tree a] -> {v:Int | (0 == len xs => v == -1) && (0 < len xs => 0 <= v)} @-}
@@ -77,18 +74,18 @@ lubRank ts = 1 + maxRankList ts
 heapSize :: Heap a -> Int
 heapSize (Heap ts) = sumSizeList ts
 
--- {-@ measure pow2 @-}
-{-@ pow2 :: Nat -> Nat @-}
+{-@ reflect pow2 @-}
+{-@ pow2 :: Nat -> Pos @-}
 pow2 :: Int -> Int
 pow2 n = if n == 0 then 1 else 2 * pow2 (n - 1)
 
 -- TODO We'd like to say rank :: {v:Nat | v == lubRank subtrees && v == len subtrees}
 -- but we need more lemmas to make this go through in link
--- TODO We'd like to say that size == pow2 rank but I can't get pow2 to be a measure
-{-@ data Tree a =
+-- TODO We'd like to say that size == pow2 rank, but we need to strengthen some other things first
+{-@ data Tree [size] a =
     Node
         { root :: a
-        , subtrees :: [BoundedTree a root]
+        , subtrees :: [LBTree a root]
         , rank :: {v:Nat | v == len subtrees}
         , size :: {v:Pos | v == 1 + sumSizeList subtrees}
         }
@@ -107,20 +104,20 @@ data Heap a = Heap { unheap :: [Tree a] }
 
 {-@ type NEHeap a = {h:Heap a | 0 < len (unheap h)} @-}
 
--- | Trees with value less than X
-{-@ type BoundedTree a X = Tree {v:a | X <= v} @-}
+-- | Trees with value at least X
+{-@ type LBTree a X = Tree (AtLeast a X) @-}
 
-{-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> {v:BoundedTree a (root t) | size v == size t} @-}
+{-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> {v:LBTree a (root t) | size v == size t} @-}
 treeIsBoundedByItsRootLemma :: Tree a -> Tree a
 treeIsBoundedByItsRootLemma (Node {rank=r, root=x, subtrees=ts, size=sz}) =
   Node {rank=r, root=x, subtrees=ts, size=sz}
 
 -- TODO double check if we need this lemma
-{-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> t:(BoundedTree a y) -> {v:BoundedTree a x | size v == size t} @-}
+{-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> t:(LBTree a y) -> {v:LBTree a x | size v == size t} @-}
 boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
 boundedTreeTransitivityLemma x y tree = tree
 
-{-@ boundedTreeListTransitivityLemma :: x:a -> {y:a | x <= y} -> ts:[BoundedTree a y] -> {v:[BoundedTree a x] | sumSizeList v == sumSizeList ts} @-}
+{-@ boundedTreeListTransitivityLemma :: x:a -> {y:a | x <= y} -> ts:[LBTree a y] -> {v:[LBTree a x] | sumSizeList v == sumSizeList ts} @-}
 boundedTreeListTransitivityLemma :: a -> a -> [Tree a] -> [Tree a]
 boundedTreeListTransitivityLemma x y ts = ts
 
@@ -167,13 +164,13 @@ boundedSizeSubtreeLemma (t : ts) =
 -- elts (Heap []) = S.empty
 -- elts (Heap (t1:ts)) = List.foldl' (\acc t -> S.union (eltsTree t) acc) S.empty (t1:ts)
 
--- {-@ measure eltsTree @-}
--- {-@ eltsTree :: t:(Tree a) -> Set a / [size t] @-}
--- eltsTree :: (Ord a) => Tree a -> Set a
--- eltsTree (Node r x ts _) = S.singleton x
--- eltsTree (Node r x (t:ts) sz) =
---   let remainder = Node r x ts (sz - size t) in
---   S.union (S.union (S.singleton x) (eltsTree t)) (eltsTree remainder)
+-- {-@ measure eltsTree' @-}
+{-@ eltsTree' :: t:(Tree a) -> Set a @-}
+eltsTree' :: (Ord a) => Tree a -> Set a
+eltsTree' (Node x [] _ _) = S.singleton x
+eltsTree' (Node x (t:ts) r sz) =
+  let remainder = Node x ts (r - 1) (sz - size t) in
+  S.union (S.union (S.singleton x) (eltsTree' t)) (eltsTree' remainder)
 
 {-@ type BoundedSizeTreeStrict a X = {t : Tree a | size t < X}  @-}
 {-@ type BoundedSizeTreesStrict a X = [BoundedSizeTreeStrict a X]  @-}
@@ -183,7 +180,7 @@ strictTransitivitySizeBoundLemma :: Int -> [Tree a] -> Int -> [Tree a]
 strictTransitivitySizeBoundLemma _ ts _ = ts
 
 {-@ lazy eltsTree @-}
-{-@ eltsTree :: t:(Tree a) -> Set a / [size t] @-}
+{-@ eltsTree :: t:(Tree a) -> Set a @-}
 eltsTree :: (Ord a) => Tree a -> Set a
 eltsTree t@(Node x ts r sz) =
   let boundBySumSizeList = (boundedSizeSubtreeLemma ts) in
@@ -208,17 +205,17 @@ mapEltsTree (t:ts) = eltsTree t : mapEltsTree ts
 
 ----------------------------------------------------------------
 
-{-@ assert :: {v:Bool | v} -> a -> a @-}
+{-@ assert :: TT -> a -> a @-}
 assert :: Bool -> a -> a
 assert _ x = x
 
-{-@ assertBoundedTree :: x:a -> BoundedTree a x -> b -> b @-}
-assertBoundedTree :: a -> Tree a -> b -> b
-assertBoundedTree _ _ x = x
+{-@ assertLBTree :: x:a -> LBTree a x -> b -> b @-}
+assertLBTree :: a -> Tree a -> b -> b
+assertLBTree _ _ x = x
 
-{-@ assertBoundedTreeList :: x:a -> [BoundedTree a x] -> b -> b @-}
-assertBoundedTreeList :: a -> [Tree a] -> b -> b
-assertBoundedTreeList _ _ x = x
+{-@ assertLBTreeList :: x:a -> [LBTree a x] -> b -> b @-}
+assertLBTreeList :: a -> [Tree a] -> b -> b
+assertLBTreeList _ _ x = x
 
 {-@ link :: t1:(Tree a) -> t2:(Tree a) -> {v:Tree a | size v == size t1 + size t2} @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
@@ -262,12 +259,6 @@ insert' t [] = [t]
 insert' t ts@(t':ts')
   | rank t < rank t' = t : ts
   | otherwise        = insert' (link t t') ts'
-
-{-@ measure len @-}
-{-@ len :: [a] -> Nat @-}
-len :: [a] -> Int
-len [] = 0
-len (_:xs) = 1 + len xs
 
 {-@ fromList :: Ord a => xs:[a] -> {v:Heap a | heapSize v == len xs} @-}
 fromList :: Ord a => [a] -> Heap a
@@ -337,13 +328,13 @@ deleteMin h =
   let (Node _ ts1 _ _, ts2) = deleteMin' (unheapNonempty h) in
   Heap (merge' (reverseHeapList ts1) ts2)
 
-{-@ deleteMin2 :: h:NEHeap a -> {v:(a, Heap {x:a | (fst v) <= x}) | 1 + heapSize (snd v) == heapSize h} @-}
+{-@ deleteMin2 :: h:NEHeap a -> (e::a, {v:Heap {x:a | e <= x} | 1 + heapSize v == heapSize h}) @-}
 deleteMin2 :: Ord a => Heap a -> (a, Heap a)
 deleteMin2 h =
   let (Node minElt ts1 _ _, ts2) = deleteMin' (unheapNonempty h) in
   (minElt, Heap (merge' (reverseHeapList ts1) ts2))
 
-{-@ deleteMin' :: xs:(NEList (Tree a)) -> {v:(Tree a, [BoundedTree a (root (fst v))]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
+{-@ deleteMin' :: xs:(NEList (Tree a)) -> {v:(Tree a, [LBTree a (root (fst v))]) | size (fst v) + sumSizeList (snd v) == sumSizeList xs} @-}
 deleteMin' :: Ord a => [Tree a] -> (Tree a, [Tree a])
 deleteMin' [t] = (t, [])
 deleteMin' (t:ts) =
