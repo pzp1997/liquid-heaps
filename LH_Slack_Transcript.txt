@@ -1,0 +1,221 @@
+
+
+pzp  3:12 PM
+I wrote a binomial tree type and want to prove some properties about the elements it contains. The non-refined type of the tree is
+data Tree a =
+    Node
+        { root :: a
+        , subtrees :: [Tree a]
+        , rank :: Int
+        , size :: Int
+        }
+I read Chapter 7 from the “Programming with Refinement Types” book about Elemental Measures and attempted to write a measure eltsTree :: Ord a => BinomialTree a -> Set a. No matter what I’ve tried, Liquid Haskell complains that it is a “Bad Measure Specification.” My closest attempt so far has been
+{-@ eltsTree :: t:(Tree a) -> Set a / [size t] @-}
+eltsTree :: (Ord a) => Tree a -> Set a
+eltsTree (Node x [] _ _) = S.singleton x
+eltsTree (Node x (t:ts) r sz) =
+  let remainder = Node x ts (r - 1) (sz - size t) in
+  S.union (S.union (S.singleton x) (eltsTree t)) (eltsTree remainder)
+I believe the problem is that any function that aggregates the elements of the tree data structure needs to be able to pattern match both down the tree and across each level of the tree, while Liquid Haskell does not allow for nested pattern matching in measures. Am I running into an inherent limitation of measures or am I just not being clever enough in my implementation for eltsTree? Are there other tricks I can do to make assertions about the elements of my tree? (edited)
+
+rjhala  7:39 PM
+Hi @pzp -- sorry there seems to be some silliness going on with our default options that I should fix! Here's a version that "works"
+import qualified Data.Set as S
+{-@ LIQUID "--exactdc" @-}
+{-@ LIQUID "--no-adt" @-}
+{-@ measure eltsTree @-}
+{- eltsTree :: t:(Tree a) -> Set a / [size t] @-}
+eltsTree :: (Ord a) => Tree a -> S.Set a
+eltsTree (Node x [] _ _)      = S.singleton x
+eltsTree (Node x (t:ts) r n) = let remainder = Node x ts (r - 1) (n - sz t) in
+                                S.union (S.union (S.singleton x) (eltsTree t)) (eltsTree remainder)
+{-@ measure sz @-}
+sz :: Tree a -> Int
+sz (Node _ _ _ n) = n
+{-@ data Tree [sz] @-}
+data Tree a = Node
+  { root :: a
+  , subtrees :: [Tree a]
+  , rank :: Int
+  , size :: Int
+  }
+7:40
+I wrote an explicit measure function sz to name the size field. LH complains with a bunch of termination errors as you need to prove that the size field holds the actual size of the tree -- otherwise the metric is not decreasing...
+
+rjhala  10:41 PM
+btw I've been thinking about this example -- and proving termination for it (with LH) seems quite tricky! I suggest running with the --no-termination flag for now!
+@niki do you have any thoughts on how to get the below to pass the termination checker?
+@Rose Kunkel didn't we have some discussion on whether things like the below should pass/fail the structural termination checker?
+{-@ measure size @-}
+{-@ size :: t:_ -> {v:Int | v > 0}  @-}
+size :: Tree a -> Int
+size (Node _ ts _ _) = 1 + sizes ts
+{-@ measure sizes @-}
+{-@ sizes :: ts:_ -> Nat @-}
+sizes :: [Tree a] -> Int
+sizes []     = 0
+sizes (t:ts) = size t + sizes ts
+data Tree a = Node
+  { root :: a
+  , subtrees :: [Tree a]
+  , rank :: Int
+  , _size :: Int
+  }
+
+Rose Kunkel  10:45 PM
+We had some discussion about it which came down to just conservatively not attempting to check mutually recursive functions, iirc
+10:47
+We could revisit it
+I don't remember off the top of my head what made mutually recursive functions so fraught
+
+Rose Kunkel  10:53 PM
+Also this seems like a place where invariants might be helpful, so you could statically forbid trees where the size parameter is not the actual size
+
+rjhala  12:05 AM
+Yes, you could but the trouble here is in even defining the size in a way that makes the termination checker happy...
+
+pzp  1:02 AM
+@rjhala Thank you so much! It works as expected now. I also figured out a way of satisfying the termination checker by refining the size field. Writing the sizeTreeList measure was just a matter of expanding sum . map size until it met the requirements for a measure. Here’s the complete and verified code. Thanks again for your assistance.
+{-@ LIQUID "--exactdc" @-}
+{-@ LIQUID "--no-adt" @-}
+module TreeElts where
+import qualified Data.Set as S
+import Data.Set (Set)
+{-@ data Tree a =
+    Node
+        { root :: a
+        , subtrees :: [Tree a]
+        , rank :: {v:Nat | v = len subtrees}
+        , size :: {v:GeInt 1 | v = 1 + sizeTreeList subtrees}
+        }
+@-}
+data Tree a =
+    Node
+        { root :: a
+        , subtrees :: [Tree a]
+        , rank :: Int
+        , size :: Int
+        }
+{-@ measure sizeTreeList @-}
+{-@ sizeTreeList :: xs:[Tree a] -> {v:Nat | len xs <= v} @-}
+sizeTreeList :: [Tree a] -> Int
+sizeTreeList [] = 0
+sizeTreeList (x:xs) = size x + sizeTreeList xs
+{-@ measure eltsTree @-}
+{-@ eltsTree :: t:(Tree a) -> Set a / [size t] @-}
+eltsTree :: (Ord a) => Tree a -> S.Set a
+eltsTree (Node x [] _ _)     = S.singleton x
+eltsTree (Node x (t:ts) r sz) =
+  let remainder = Node x ts (r - 1) (sz - size t) in
+  S.union (S.union (S.singleton x) (eltsTree t)) (eltsTree remainder)
+new messages
+
+niki  2:51 AM
+@Rose Kunkel @rjhala, size seems like the termination function for Tree , so there is definitely no way to prove semantically that it is terminating. The structural termination argument seems quite straight forward, but from what Rose says seems like it is just not implemented. It would be great if you could revisit it :slightly_smiling_face:
+
+Rose Kunkel  3:21 AM
+@niki do you have a sense of what it means for mutually recursive functions to be structurally terminating? I think part of why I didn't implement it is that I don't have a good handle on what property we would even be checking
+3:25
+For non mutually recursive definitions the property is something like "every time the body of the function calls itself, it does so on subterms of its arguments"
+3:25
+But it needs to be something stronger for mutually recursive definitions
+
+niki  3:27 AM
+why it needs to do something stronger?
+3:27
+if the calls are only on subterms, you should be good.
+3:28
+in this sizes example you only have calls on subterms.
+
+Rose Kunkel  3:28 AM
+For example
+```
+f x = g x
+g x = f x
+```
+
+niki  3:29 AM
+I assume a problem is that your functions might still terminate even if you are not making recursive calls on strict subterms (but also on the same terms). But it is ok to reject such cases as not structurally terminating
+
+Rose Kunkel  3:29 AM
+Both f and g individually satisfy that property
+3:29
+But neither is terminating
+
+niki  3:29 AM
+How f and g satisfy the property? You are not using subterms
+
+Rose Kunkel  3:30 AM
+Because the body of f doesn't call f at all
+3:30
+So it trivially only calls itself on subterms
+
+niki  3:31 AM
+But you are in a Letrec, so, you should check this property on all functions mutually defined
+3:31
+Question: right now when you have mutually defined functions structural termination is off, by default?
+
+Rose Kunkel  3:31 AM
+Yes
+3:32
+Before I worked on the structural checker it there was an implementation for mutually recursive functions but it was unsound
+
+niki  3:33 AM
+Ok, so, for Rec [(f1, e1), ... , (fn, en)] at each fi x  you can call each fj (even if i==j) only on subterms of x?
+3:34
+was it unsound because it did not take care of this mutual calls?
+
+Rose Kunkel  3:34 AM
+It was unsound because it made assumptions about the order in which args decreased, iirc
+3:35
+So it was unsound on things like
+f x y = g y x
+g y x = f x y
+3:35
+The actual example was more complicated than that
+
+niki  3:36 AM
+Ok, I can see it
+3:37
+BTW, any idea what Agda/Coq would do in the sizes above?
+
+Rose Kunkel  3:37 AM
+I don't know
+
+niki  3:39 AM
+I can see how flipping arguments could confuse the termination checker. In semantic termination, you can specify that a specific argument is decreasing and “encode” this flipping. Maybe a good first step is to investigate on Agda/Coq (or any other tool with structural termination) before we come up with our strategy?
+3:40
+But, the rule “at mutually defined functions you can use only strict subterms on each mutually recursive call” seems sound (but imprecise
+
+Rose Kunkel  3:42 AM
+Yes that sounds sound to me
+I'd need to think a little more to be sure
+I remember there were also complications caused by partial applications but I don't remember the specifics
+3:44
+I'd have to look at the code/tests again
+
+niki  3:47 AM
+Cool! BTW, have you closed all the binah issues?
+
+Rose Kunkel  3:47 AM
+I'm not sure
+
+niki  3:48 AM
+The problem we were dealing with last (are higher kinded type variables generic) seems interesting, but I assume much more difficult than structural termination
+
+Rose Kunkel  3:49 AM
+Yes
+I think we've sort of put a bandaid over that for now so it's not blocking Binah stuff
+But it would be good to explore more
+
+niki  3:51 AM
+Cool! Feel free to ping me with questions (I am still catching up with things left behind due to ICFP, but next week I will have more time, esp, with all the stay-home-coronavirus recommendations …)
+
+Rose Kunkel  3:52 AM
+I'm in pretty much the same state lol
+
+niki  3:52 AM
+Patience…
+
+rjhala  10:25 AM
+Wow that’s awesome!!! Please do let us know if you get stuck again and also if you make headway with binomial heaps!!

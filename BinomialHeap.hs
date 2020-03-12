@@ -4,6 +4,13 @@
   - Purely Functional Data Structures
 -}
 
+-- Drop module qualifers from pretty-printed names
+{-@ LIQUID "--short-names" @-}
+-- Automatically generate singleton types for data constructors
+{-@ LIQUID "--exactdc" @-}
+-- Disable ADTs (only used with exactDC)
+{-@ LIQUID "--no-adt" @-}
+
 module Data.Heap.Binominal where
 -- (
 --   -- * Data structures
@@ -98,6 +105,13 @@ data Tree a =
         , size :: Int
         }
 
+-- {-@ assume rankSubtreesLemma :: t:Tree a ->
+--   {ts:[Tree a] |
+--     ts = subtrees t && rank t = lubRank ts && maxRankList ts < rank t}
+-- @-}
+-- rankSubtreesLemma :: Tree a -> [Tree a]
+-- rankSubtreesLemma t = subtrees t
+
 {-@ data Heap a = Heap { unheap :: [Tree a] } @-}
 data Heap a = Heap { unheap :: [Tree a] }
 
@@ -163,13 +177,13 @@ boundedSizeSubtreeLemma (t : ts) =
 -- elts (Heap []) = S.empty
 -- elts (Heap (t1:ts)) = List.foldl' (\acc t -> S.union (eltsTree t) acc) S.empty (t1:ts)
 
--- {-@ measure eltsTree' @-}
-{-@ eltsTree' :: t:(Tree a) -> Set a @-}
-eltsTree' :: (Ord a) => Tree a -> Set a
-eltsTree' (Node x [] _ _) = S.singleton x
-eltsTree' (Node x (t:ts) r sz) =
+{-@ measure eltsTree @-}
+{-@ eltsTree :: t:(Tree a) -> Set a / [size t] @-}
+eltsTree :: (Ord a) => Tree a -> Set a
+eltsTree (Node x [] _ _) = S.singleton x
+eltsTree (Node x (t:ts) r sz) =
   let remainder = Node x ts (r - 1) (sz - size t) in
-  S.union (S.union (S.singleton x) (eltsTree' t)) (eltsTree' remainder)
+  S.union (S.union (S.singleton x) (eltsTree t)) (eltsTree remainder)
 
 {-@ type BoundedSizeTreeStrict a X = {t : Tree a | size t < X}  @-}
 {-@ type BoundedSizeTreesStrict a X = [BoundedSizeTreeStrict a X]  @-}
@@ -178,26 +192,28 @@ eltsTree' (Node x (t:ts) r sz) =
 strictTransitivitySizeBoundLemma :: Int -> [Tree a] -> Int -> [Tree a]
 strictTransitivitySizeBoundLemma _ ts _ = ts
 
-{-@ lazy eltsTree @-}
-{-@ eltsTree :: t:(Tree a) -> Set a @-}
-eltsTree :: (Ord a) => Tree a -> Set a
-eltsTree t@(Node x ts r sz) =
-  let boundBySumSizeList = (boundedSizeSubtreeLemma ts) in
-  let boundByOverallSize = strictTransitivitySizeBoundLemma (sumSizeList ts) boundBySumSizeList (size t) in
-  assert (sumSizeList ts < size t) $
-  S.union (S.singleton x) (eltsTrees boundByOverallSize)
+-- {-@ measure eltsTree @-}
+-- {-@ eltsTree :: t:(Tree a) -> Set a / [rank t] @-}
+-- eltsTree :: (Ord a) => Tree a -> Set a
+-- eltsTree t@(Node x ts r sz) =
+--   S.union (S.singleton x) (eltsTrees (rankSubtreesLemma t))
+
+  -- let boundBySumSizeList = boundedSizeSubtreeLemma ts in
+  -- let boundByOverallSize = strictTransitivitySizeBoundLemma (sumSizeList ts) boundBySumSizeList (size t) in
+  -- assert (sumSizeList ts < size t) $
+  -- S.union (S.singleton x) (eltsTrees boundByOverallSize)
+
+-- {-@ measure eltsTrees @-}
+-- {-@ eltsTrees :: ts:[Tree a] -> Set a / [len ts, maxRankList ts] @-}
+-- eltsTrees :: Ord a => [Tree a] -> Set a
+-- eltsTrees [] = S.empty
+-- eltsTrees (t:ts) = S.union (eltsTree t) (eltsTrees ts)
 
 -- {-@ measure mapEltsTree @-}
-{-@ eltsTrees :: ts:[Tree a] -> Set a / [len ts] @-}
-eltsTrees :: Ord a => [Tree a] -> Set a
-eltsTrees [] = S.empty
-eltsTrees (t:ts) = S.union (eltsTree t) (eltsTrees ts)
-
--- {-@ measure mapEltsTree @-}
-{-@ mapEltsTree :: ts:[Tree a] -> [Set a] / [len ts] @-}
-mapEltsTree :: Ord a => [Tree a] -> [Set a]
-mapEltsTree [] = []
-mapEltsTree (t:ts) = eltsTree t : mapEltsTree ts
+-- {-@ mapEltsTree :: ts:[Tree a] -> [Set a] / [len ts] @-}
+-- mapEltsTree :: Ord a => [Tree a] -> [Set a]
+-- mapEltsTree [] = []
+-- mapEltsTree (t:ts) = eltsTree t : mapEltsTree ts
 
 -- {-@ predicate EqElts X Y = ((elts X) = (elts Y)) @-}
 -- {-@ type HeapS a S = {v:[a] | elts v = S} @-}
