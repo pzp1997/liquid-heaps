@@ -132,20 +132,19 @@ boundedTreeTransitivityLemma x y tree = tree
 boundedTreeListTransitivityLemma :: a -> a -> [Tree a] -> [Tree a]
 boundedTreeListTransitivityLemma x y ts = ts
 
-
 {-@ measure elts @-}
 {-@ elts :: h:Heap a -> Set a / [len (unheap h)] @-}
 elts :: (Ord a) => Heap a -> Set a
 elts (Heap []) = S.empty
-elts (Heap (t:ts)) = S.union (eltsTree t) (elts (Heap ts))
+elts (Heap (t:ts)) = S.union (treeElts t) (elts (Heap ts))
 
-{-@ measure eltsTree @-}
-{-@ eltsTree :: t:(Tree a) -> Set a / [size t] @-}
-eltsTree :: (Ord a) => Tree a -> Set a
-eltsTree (Node x [] _ _) = S.singleton x
-eltsTree (Node x (t:ts) r sz) =
+{-@ measure treeElts @-}
+{-@ treeElts :: t:(Tree a) -> Set a / [size t] @-}
+treeElts :: (Ord a) => Tree a -> Set a
+treeElts (Node x [] _ _) = S.singleton x
+treeElts (Node x (t:ts) r sz) =
   let remainder = Node x ts (r - 1) (sz - size t) in
-  S.union (S.union (S.singleton x) (eltsTree t)) (eltsTree remainder)
+  S.union (treeElts t) (treeElts remainder)
 
 ----------------------------------------------------------------
 
@@ -235,15 +234,16 @@ fromList (x:xs) = insert x (fromList xs)
 -- {-@ data [a]<p :: Int -> Bool> = KV { keyVals :: [(Int<p>, v)] } @-}
 -- data Assoc v = KV [(Int, v)]
 
+{-@ toList :: Heap a -> [a] @-}
+toList :: Heap a -> [a]
+toList = concatMap treeToList . unheap
 
--- {-@ toList :: Ord a => Heap a -> [a] @-}
--- toList :: Heap a -> [a]
--- toList (Heap ts) = concatMap toList' ts
-
--- {-@ toList' :: t:Tree a -> [a] / [size t] @-}
--- toList' :: Tree a -> [a]
--- toList' (Node _ x [] _) = [x]
--- toList' (Node _ x ts _) = x : concatMap toList' ts
+{-@ treeToList :: t:Tree a -> [a] / [size t] @-}
+treeToList :: Tree a -> [a]
+treeToList (Node x [] _ _) = [x]
+treeToList (Node x (t:ts) r sz) =
+  let remainder = Node x ts (r - 1) (sz - size t) in
+  treeToList t ++ treeToList remainder
 
 {-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
