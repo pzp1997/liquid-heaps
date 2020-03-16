@@ -125,21 +125,11 @@ instance (Eq a, Ord a) => Eq (Heap a) where
   h1 == h2 = heapSort h1 == heapSort h2
 
 -- TODO maybe use self-invariants to encode this
-{-@ treeIsBoundedByItsRootLemma :: t:Tree a -> {v:AtLeastTree a (root t) | TEltsSize v (treeElts t) (size t) && root v = root t} @-}
-treeIsBoundedByItsRootLemma :: Tree a -> Tree a
-treeIsBoundedByItsRootLemma (Node x ts r sz) = Node x ts r sz
-
--- TODO double check if we need this lemma
-{-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> t:AtLeastTree a y ->
-  {v:AtLeastTree a x | TEltsSize v (treeElts t) (size t) && root v = root t} @-}
-boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
-boundedTreeTransitivityLemma _ _ tree = tree
-
-{-@ boundedTreeListTransitivityLemma :: x:a -> {y:a | x <= y} -> ts:[AtLeastTree a y] ->
-  {v:[AtLeastTree a x] | TsEltsSize v (treeListElts ts) (treeListSize ts)}
-@-}
-boundedTreeListTransitivityLemma :: a -> a -> [Tree a] -> [Tree a]
-boundedTreeListTransitivityLemma x y ts = ts
+{-@ treeAtLeastRoot :: t:Tree a ->
+  {v:AtLeastTree a (root t) | TEltsSize v (treeElts t) (size t)
+                           && root v = root t} @-}
+treeAtLeastRoot :: Tree a -> Tree a
+treeAtLeastRoot (Node x ts r sz) = Node x ts r sz
 
 {- Elements measures -}
 
@@ -196,14 +186,8 @@ assertAtLeastHeap _ _ x = x
 @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
 link t1@(Node x1 ts1 r1 sz1) t2@(Node x2 ts2 r2 sz2)
-  | x1 <= x2  =
-    let t2BoundedByX2 = treeIsBoundedByItsRootLemma t2 in
-    let t2BoundedByX1 = boundedTreeTransitivityLemma x1 x2 t2BoundedByX2 in
-    Node x1 (t2BoundedByX1:ts1) (1 + r1) (sz1 + sz2)
-  | otherwise =
-    let t1BoundedByX1 = treeIsBoundedByItsRootLemma t1 in
-    let t1BoundedByX2 = boundedTreeTransitivityLemma x2 x1 t1BoundedByX1 in
-    Node x2 (t1BoundedByX2:ts2) (1 + r2) (sz1 + sz2)
+  | x1 <= x2  = Node x1 ((treeAtLeastRoot t2):ts1) (1 + r1) (sz1 + sz2)
+  | otherwise = Node x2 ((treeAtLeastRoot t1):ts2) (1 + r2) (sz1 + sz2)
 
 {-@ empty :: {v:Heap a | HEltsSize v S.empty 0} @-}
 empty :: Heap a
@@ -304,7 +288,7 @@ deleteMin = snd . deleteMin2
 deleteMin2 :: Ord a => Heap a -> (a, Heap a)
 deleteMin2 h =
   let (t, ts2) = deleteMin' (unheapNonempty h) in
-  let ts1 = subtreeEltsAreEltsOfTree (treeIsBoundedByItsRootLemma t) in
+  let ts1 = subtreeEltsAreEltsOfTree (treeAtLeastRoot t) in
   (rootIsEltOfTree t, Heap (merge' (reverseHeapList ts1) ts2))
 
 -- TODO self-invariant?
@@ -333,18 +317,9 @@ deleteMin' :: Ord a => [Tree a] -> (Tree a, [Tree a])
 deleteMin' [t] = (t, [])
 deleteMin' (t:ts) =
   let (t', ts') = deleteMin' ts in
-  let x = root t in
-  let x' = root t' in
-  let tBounded = treeIsBoundedByItsRootLemma t in
-  let tBounded' = treeIsBoundedByItsRootLemma t' in
-  if x < x'
-  then
-    let hd = boundedTreeTransitivityLemma x x' tBounded' in
-    let tl = boundedTreeListTransitivityLemma x x' ts' in
-    (t, hd:tl)
-  else
-    let hd = boundedTreeTransitivityLemma x' x tBounded in
-    (t', hd:ts')
+  if root t < root t'
+  then (t, (treeAtLeastRoot t'):ts')
+  else (t', (treeAtLeastRoot t):ts')
 
 {-| Merging two heaps. Worst-case: O(log N), amortized: O(log N)
 
