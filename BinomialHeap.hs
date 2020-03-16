@@ -111,8 +111,12 @@ data Tree a =
 data Heap a = Heap { unheap :: [Tree a] }
 
 {-@ type NEHeap a = {h:Heap a | 0 < len (unheap h)} @-}
-
 {-@ type NESet a = {s:Set a | s != S.empty} @-}
+
+{-@ predicate HEltsSize H X Y = (heapElts H = X && heapSize H = Y) @-}
+{-@ predicate TEltsSize T X Y = (treeElts T = X && size T = Y )@-}
+{-@ predicate TsEltsSize Ts X Y = (treeListElts Ts = X && treeListSize Ts = Y) @-}
+
 -- {-@ predicate EqElts X Y = ((elts X) = (elts Y)) @-}
 -- {-@ type HeapS a S = {v:[a] | elts v = S} @-}
 
@@ -120,19 +124,18 @@ instance (Eq a, Ord a) => Eq (Heap a) where
   h1 == h2 = heapSort h1 == heapSort h2
 
 -- TODO maybe use self-invariants to encode this
-{-@ treeIsBoundedByItsRootLemma :: t:(Tree a) -> {v:AtLeastTree a (root t) | treeElts v = treeElts t && size v = size t} @-}
+{-@ treeIsBoundedByItsRootLemma :: t:Tree a -> {v:AtLeastTree a (root t) | TEltsSize v (treeElts t) (size t) && root v = root t} @-}
 treeIsBoundedByItsRootLemma :: Tree a -> Tree a
-treeIsBoundedByItsRootLemma (Node {rank=r, root=x, subtrees=ts, size=sz}) =
-  Node {rank=r, root=x, subtrees=ts, size=sz}
+treeIsBoundedByItsRootLemma (Node x ts r sz) = Node x ts r sz
 
 -- TODO double check if we need this lemma
 {-@ boundedTreeTransitivityLemma :: x:a -> {y:a | x <= y} -> t:AtLeastTree a y ->
-  {v:AtLeastTree a x | treeElts v = treeElts t && size v = size t} @-}
+  {v:AtLeastTree a x | TEltsSize v (treeElts t) (size t) && root v = root t} @-}
 boundedTreeTransitivityLemma :: a -> a -> Tree a -> Tree a
-boundedTreeTransitivityLemma x y tree = tree
+boundedTreeTransitivityLemma _ _ tree = tree
 
 {-@ boundedTreeListTransitivityLemma :: x:a -> {y:a | x <= y} -> ts:[AtLeastTree a y] ->
-  {v:[AtLeastTree a x] | treeListElts v = treeListElts ts && treeListSize v = treeListSize ts}
+  {v:[AtLeastTree a x] | TsEltsSize v (treeListElts ts) (treeListSize ts)}
 @-}
 boundedTreeListTransitivityLemma :: a -> a -> [Tree a] -> [Tree a]
 boundedTreeListTransitivityLemma x y ts = ts
@@ -168,7 +171,6 @@ listElts :: Ord a => [a] -> Set a
 listElts [] = S.empty
 listElts (x : xs) = S.union (S.singleton x) (listElts xs)
 
-{-@ predicate EltsSize S X Y = (heapElts S = X && heapSize S = Y) @-}
 
 ----------------------------------------------------------------
 
@@ -176,17 +178,20 @@ listElts (x : xs) = S.union (S.singleton x) (listElts xs)
 assert :: Bool -> a -> a
 assert _ x = x
 
--- {-@ assertAtLeastTree :: x:a -> AtLeastTree a x -> b -> b @-}
--- assertAtLeastTree :: a -> Tree a -> b -> b
--- assertAtLeastTree _ _ x = x
+{-@ assertAtLeastTree :: x:a -> AtLeastTree a x -> b -> b @-}
+assertAtLeastTree :: a -> Tree a -> b -> b
+assertAtLeastTree _ _ x = x
 
--- {-@ assertAtLeastTreeList :: x:a -> [AtLeastTree a x] -> b -> b @-}
--- assertAtLeastTreeList :: a -> [Tree a] -> b -> b
--- assertAtLeastTreeList _ _ x = x
+{-@ assertAtLeastTreeList :: x:a -> [AtLeastTree a x] -> b -> b @-}
+assertAtLeastTreeList :: a -> [Tree a] -> b -> b
+assertAtLeastTreeList _ _ x = x
+
+{-@ assertAtLeastHeap :: x:a -> Heap (AtLeast a x) -> b -> b @-}
+assertAtLeastHeap :: a -> Heap a -> b -> b
+assertAtLeastHeap _ _ x = x
 
 {-@ link :: t1:(Tree a) -> t2:(Tree a) ->
-  {v:Tree a | treeElts v = S.union (treeElts t1) (treeElts t2)
-           && size v = size t1 + size t2}
+  {v:Tree a | TEltsSize v (S.union (treeElts t1) (treeElts t2)) (size t1 + size t2)}
 @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
 link t1@(Node x1 ts1 r1 sz1) t2@(Node x2 ts2 r2 sz2)
@@ -199,7 +204,7 @@ link t1@(Node x1 ts1 r1 sz1) t2@(Node x2 ts2 r2 sz2)
     let t1BoundedByX2 = boundedTreeTransitivityLemma x2 x1 t1BoundedByX1 in
     Node x2 (t1BoundedByX2:ts2) (1 + r2) (sz1 + sz2)
 
-{-@ empty :: {v:Heap a | EltsSize v S.empty 0} @-}
+{-@ empty :: {v:Heap a | HEltsSize v S.empty 0} @-}
 empty :: Heap a
 empty = Heap []
 
@@ -208,7 +213,7 @@ empty = Heap []
 null :: Heap a -> Bool
 null h = heapSize h == 0
 
-{-@ singleton :: x:a -> {v:Heap a | EltsSize v (S.singleton x) 1} @-}
+{-@ singleton :: x:a -> {v:Heap a | HEltsSize v (S.singleton x) 1} @-}
 singleton :: Ord a => a -> Heap a
 singleton x = Heap [Node x [] 0 1]
 
@@ -220,15 +225,14 @@ Properties we would like to verify:
   3. elements we would expect
 -}
 
--- {-@ insert :: x:a -> h:Heap a -> {v:Heap a | EltsSize v (S.union (S.singleton x) (heapElts h)) (1 + heapSize h)} @-}
+-- {-@ insert :: x:a -> h:Heap a -> {v:Heap a | HEltsSize v (S.union (S.singleton x) (heapElts h)) (1 + heapSize h)} @-}
 {-@ insert :: x:a -> h:Heap a ->
-  {v:Heap a | EltsSize v (S.union (S.singleton x) (heapElts h)) (1 + heapSize h)} @-}
+  {v:Heap a | HEltsSize v (S.union (S.singleton x) (heapElts h)) (1 + heapSize h)} @-}
 insert :: Ord a => a -> Heap a -> Heap a
 insert x (Heap ts) = Heap (insert' (Node x [] 0 1) ts)
 
 {-@ insert' :: t:Tree a -> ts:[Tree a] ->
-  {v:[Tree a] | treeListElts v = S.union (treeElts t) (treeListElts ts)
-             && treeListSize v = size t + treeListSize ts}
+  {v:[Tree a] | TsEltsSize v (S.union (treeElts t) (treeListElts ts)) (size t + treeListSize ts) }
 @-}
 insert' :: Ord a => Tree a -> [Tree a] -> [Tree a]
 insert' t [] = [t]
@@ -236,12 +240,12 @@ insert' t ts@(t':ts')
   | rank t < rank t' = t : ts
   | otherwise        = insert' (link t t') ts'
 
-{-@ fromList :: xs:[a] -> {v:Heap a | heapElts v = listElts xs && heapSize v = len xs} @-}
+{-@ fromList :: xs:[a] -> {v:Heap a | HEltsSize v (listElts xs) (len xs)} @-}
 fromList :: Ord a => [a] -> Heap a
 fromList [] = empty
 fromList (x:xs) = insert x (fromList xs)
 
--- ----------------------------------------------------------------
+----------------------------------------------------------------
 
 {-| Creating a list from a heap. Worst-case: O(N) -}
 
@@ -272,37 +276,88 @@ minimum = root . fst . deleteMin' . unheapNonempty
 
 {-| Deleting the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
-{-@ reverseHeapList :: ts:[Tree a] -> {v:[Tree a] | treeListElts v = treeListElts ts && treeListSize v = treeListSize ts} @-}
+{-@ reverseHeapList :: ts:[Tree a] -> {v:[Tree a] | TsEltsSize v (treeListElts ts) (treeListSize ts)} @-}
 reverseHeapList :: [Tree a] -> [Tree a]
 reverseHeapList ts = reverseHeapListAux ts []
 
 {-@ reverseHeapListAux :: ts:[Tree a] -> acc:[Tree a] ->
-  {v:[Tree a] |
-    treeListElts v = S.union (treeListElts ts) (treeListElts acc) &&
-    treeListSize v = treeListSize ts + treeListSize acc}
+  {v:[Tree a] | TsEltsSize v (
+                  S.union (treeListElts ts) (treeListElts acc))(
+                  treeListSize ts + treeListSize acc)}
 @-}
 reverseHeapListAux :: [Tree a] -> [Tree a] -> [Tree a]
 reverseHeapListAux [] acc = acc
 reverseHeapListAux (t:ts) acc = reverseHeapListAux ts (t:acc)
 
-{-@ unheapNonempty :: h:(NEHeap a) -> {v:NEList (Tree a) | EltsSize h (treeListElts v) (treeListSize v)} @-}
+{-@ unheapNonempty :: h:NEHeap a -> {v:NEList (Tree a) | TsEltsSize v (heapElts h) (heapSize h)} @-}
 unheapNonempty :: Heap a -> [Tree a]
 unheapNonempty (Heap ts@(_:_)) = ts
 
 -- TODO encode elt information in type
-{-@ deleteMin :: h:(NEHeap a) -> {v:Heap a | 1 + heapSize v = heapSize h} @-}
+{-@ deleteMin :: h:NEHeap a -> {v:Heap a | 1 + heapSize v = heapSize h} @-}
 deleteMin :: Ord a => Heap a -> Heap a
 deleteMin h =
   let (Node _ ts1 _ _, ts2) = deleteMin' (unheapNonempty h) in
   Heap (merge' (reverseHeapList ts1) ts2)
 
 -- TODO encode elt information in type
-{-@ deleteMin2 :: h:NEHeap a -> (e::a, {v:Heap {x:a | e <= x} | 1 + heapSize v = heapSize h}) @-}
--- {-@ deleteMin2 :: h:NEHeap a -> (e::a, {v:Heap {x:a | e <= x} | S.union (S.singleton e) (heapElts v) = heapElts h && 1 + heapSize v = heapSize h}) @-}
+-- {-@ deleteMin2 :: h:NEHeap a -> (e::a, {v:Heap {x:a | e <= x} | 1 + heapSize v = heapSize h}) @-}
+{-@ deleteMin2 :: h:NEHeap a ->
+  {v:(a, Heap {x:a | (fst v) <= x}) |
+    S.union (S.singleton (fst v)) (heapElts (snd v)) = heapElts h &&
+    1 + heapSize (snd v) = heapSize h} @-}
 deleteMin2 :: Ord a => Heap a -> (a, Heap a)
 deleteMin2 h =
-  let (Node minElt ts1 _ _, ts2) = deleteMin' (unheapNonempty h) in
-  (minElt, Heap (merge' (reverseHeapList ts1) ts2))
+  let ts = unheapNonempty h in
+  let (t, ts2) = deleteMin' ts in
+  let minElt = rootIsEltOfTree t in
+  let tBounded = treeIsBoundedByItsRootLemma t in
+  let ts1 = subtreeEltsAreEltsOfTree tBounded in
+  let rev_ts1 = reverseHeapList ts1 in
+  let mergedTs = merge' rev_ts1 ts2 in
+  let newH = Heap mergedTs in
+  let pair = (minElt, newH) in
+  -- assertAtLeastTreeList minElt ts2 $
+  -- assertAtLeastTreeList minElt ts1 $
+  -- assertAtLeastTreeList minElt rev_ts1 $
+  -- assertAtLeastTreeList minElt mergedTs $
+  -- assertAtLeastHeap minElt newH $
+  -- liquidAssert (heapElts h == treeListElts ts) $
+  -- liquidAssert (treeListElts ts == S.union (treeElts t) (treeListElts ts2)) $
+  -- liquidAssert (S.member minElt (treeElts t)) $
+  -- liquidAssert (root tBounded == root t) $
+  -- liquidAssert (treeElts tBounded == treeElts t) $
+  -- liquidAssert (S.union (S.singleton (root tBounded)) (treeListElts ts1) == treeElts tBounded) $
+  -- liquidAssert (treeElts t == S.union (S.singleton minElt) (treeListElts ts1)) $
+  -- liquidAssert (treeListElts ts1 == treeListElts rev_ts1) $
+  -- liquidAssert (S.union (treeListElts rev_ts1) (treeListElts ts2) == treeListElts mergedTs) $
+  -- liquidAssert (treeListElts mergedTs == heapElts newH) $
+  -- liquidAssert (S.union (S.singleton minElt) (heapElts newH) == S.union (S.singleton minElt) (S.union (treeListElts ts1) (treeListElts ts2))) $
+  -- liquidAssert (treeListElts ts == S.union (S.singleton minElt) (heapElts newH)) $
+  -- liquidAssert (treeListElts ts == heapElts h) $
+  -- liquidAssert (S.union (S.singleton minElt) (heapElts newH) == heapElts h) $
+  -- liquidAssert (heapSize h == treeListSize ts) $
+  -- liquidAssert (treeListSize ts == size t + treeListSize ts2) $
+  -- liquidAssert (size t == size tBounded) $
+  -- liquidAssert (1 + heapSize newH == heapSize h) $
+  pair
+
+-- TODO self-invariant?
+{-@ rootIsEltOfTree :: t:Tree a -> {v:a | v = root t && S.member v (treeElts t)} @-}
+rootIsEltOfTree :: Tree a -> a
+rootIsEltOfTree (Node x [] _ _) = x
+rootIsEltOfTree (Node x (t:ts) r sz) =
+    let remainder = Node x ts (r - 1) (sz - size t) in
+    rootIsEltOfTree remainder
+
+
+{-@ subtreeEltsAreEltsOfTree :: t:Tree a -> {v:[Tree a] | S.union (S.singleton (root t)) (treeListElts v) = treeElts t && 1 + treeListSize v = size t} @-}
+subtreeEltsAreEltsOfTree :: Tree a -> [Tree a]
+subtreeEltsAreEltsOfTree (Node _ [] _ _) = []
+subtreeEltsAreEltsOfTree (Node x (t:ts) r sz) =
+    let remainder = Node x ts (r - 1) (sz - size t) in
+    t : subtreeEltsAreEltsOfTree remainder
+
 
 {-@ deleteMin' :: xs:(NEList (Tree a)) ->
   {v:(Tree a, [AtLeastTree a (root (fst v))]) |
@@ -334,7 +389,7 @@ Properties to verify
 -}
 
 {-@ merge :: h1:Heap a -> h2:Heap a ->
-  {v:Heap a | EltsSize v (S.union (heapElts h1) (heapElts h2)) (heapSize h1 + heapSize h2)} @-}
+  {v:Heap a | HEltsSize v (S.union (heapElts h1) (heapElts h2)) (heapSize h1 + heapSize h2)} @-}
 merge :: Ord a => Heap a -> Heap a -> Heap a
 merge (Heap ts1) (Heap ts2) = Heap (merge' ts1 ts2)
 
@@ -349,12 +404,12 @@ merge' ts1@(t1:ts1') ts2@(t2:ts2')
   | rank t2 < rank t1 = t2 : merge' ts1 ts2'
   | otherwise         = insert' (link t1 t2) (merge' ts1' ts2')
 
--- ----------------------------------------------------------------
--- -- Basic operations
--- ----------------------------------------------------------------
+----------------------------------------------------------------
+-- Basic operations
+----------------------------------------------------------------
 
--- {-| Checking validity of a heap.
--- -}
+{-| Checking validity of a heap.
+-}
 
 -- {-@ valid :: Heap a -> TT @-}
 -- valid :: Ord a => Heap a -> Bool
