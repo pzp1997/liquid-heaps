@@ -113,9 +113,10 @@ data Heap a = Heap { unheap :: [Tree a] }
 {-@ type NEHeap a = {h:Heap a | 0 < len (unheap h)} @-}
 {-@ type NESet a = {s:Set a | s != S.empty} @-}
 
-{-@ predicate HEltsSize H X Y = (heapElts H = X && heapSize H = Y) @-}
+{-@ predicate LEltsSize H X Y = (listElts H = X && len H = Y) @-}
 {-@ predicate TEltsSize T X Y = (treeElts T = X && size T = Y )@-}
 {-@ predicate TsEltsSize Ts X Y = (treeListElts Ts = X && treeListSize Ts = Y) @-}
+{-@ predicate HEltsSize H X Y = (heapElts H = X && heapSize H = Y) @-}
 
 -- {-@ predicate EqElts X Y = ((elts X) = (elts Y)) @-}
 -- {-@ type HeapS a S = {v:[a] | elts v = S} @-}
@@ -269,10 +270,9 @@ treeToList (Node x (t:ts) r sz) =
 
 {-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
--- TODO encode elt information in type
-{-@ minimum :: NEHeap a -> a @-}
+{-@ minimum :: h:NEHeap a -> {v:a | S.member v (heapElts h)} @-}
 minimum :: Ord a => Heap a -> a
-minimum = root . fst . deleteMin' . unheapNonempty
+minimum = fst . deleteMin2
 
 {-| Deleting the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
@@ -293,54 +293,19 @@ reverseHeapListAux (t:ts) acc = reverseHeapListAux ts (t:acc)
 unheapNonempty :: Heap a -> [Tree a]
 unheapNonempty (Heap ts@(_:_)) = ts
 
--- TODO encode elt information in type
-{-@ deleteMin :: h:NEHeap a -> {v:Heap a | 1 + heapSize v = heapSize h} @-}
+{-@ deleteMin :: h:NEHeap a -> {v:Heap a | S.isSubsetOf (heapElts v) (heapElts h) && 1 + heapSize v = heapSize h} @-}
 deleteMin :: Ord a => Heap a -> Heap a
-deleteMin h =
-  let (Node _ ts1 _ _, ts2) = deleteMin' (unheapNonempty h) in
-  Heap (merge' (reverseHeapList ts1) ts2)
+deleteMin = snd . deleteMin2
 
--- TODO encode elt information in type
--- {-@ deleteMin2 :: h:NEHeap a -> (e::a, {v:Heap {x:a | e <= x} | 1 + heapSize v = heapSize h}) @-}
 {-@ deleteMin2 :: h:NEHeap a ->
   {v:(a, Heap {x:a | (fst v) <= x}) |
     S.union (S.singleton (fst v)) (heapElts (snd v)) = heapElts h &&
     1 + heapSize (snd v) = heapSize h} @-}
 deleteMin2 :: Ord a => Heap a -> (a, Heap a)
 deleteMin2 h =
-  let ts = unheapNonempty h in
-  let (t, ts2) = deleteMin' ts in
-  let minElt = rootIsEltOfTree t in
-  let tBounded = treeIsBoundedByItsRootLemma t in
-  let ts1 = subtreeEltsAreEltsOfTree tBounded in
-  let rev_ts1 = reverseHeapList ts1 in
-  let mergedTs = merge' rev_ts1 ts2 in
-  let newH = Heap mergedTs in
-  let pair = (minElt, newH) in
-  -- assertAtLeastTreeList minElt ts2 $
-  -- assertAtLeastTreeList minElt ts1 $
-  -- assertAtLeastTreeList minElt rev_ts1 $
-  -- assertAtLeastTreeList minElt mergedTs $
-  -- assertAtLeastHeap minElt newH $
-  -- liquidAssert (heapElts h == treeListElts ts) $
-  -- liquidAssert (treeListElts ts == S.union (treeElts t) (treeListElts ts2)) $
-  -- liquidAssert (S.member minElt (treeElts t)) $
-  -- liquidAssert (root tBounded == root t) $
-  -- liquidAssert (treeElts tBounded == treeElts t) $
-  -- liquidAssert (S.union (S.singleton (root tBounded)) (treeListElts ts1) == treeElts tBounded) $
-  -- liquidAssert (treeElts t == S.union (S.singleton minElt) (treeListElts ts1)) $
-  -- liquidAssert (treeListElts ts1 == treeListElts rev_ts1) $
-  -- liquidAssert (S.union (treeListElts rev_ts1) (treeListElts ts2) == treeListElts mergedTs) $
-  -- liquidAssert (treeListElts mergedTs == heapElts newH) $
-  -- liquidAssert (S.union (S.singleton minElt) (heapElts newH) == S.union (S.singleton minElt) (S.union (treeListElts ts1) (treeListElts ts2))) $
-  -- liquidAssert (treeListElts ts == S.union (S.singleton minElt) (heapElts newH)) $
-  -- liquidAssert (treeListElts ts == heapElts h) $
-  -- liquidAssert (S.union (S.singleton minElt) (heapElts newH) == heapElts h) $
-  -- liquidAssert (heapSize h == treeListSize ts) $
-  -- liquidAssert (treeListSize ts == size t + treeListSize ts2) $
-  -- liquidAssert (size t == size tBounded) $
-  -- liquidAssert (1 + heapSize newH == heapSize h) $
-  pair
+  let (t, ts2) = deleteMin' (unheapNonempty h) in
+  let ts1 = subtreeEltsAreEltsOfTree (treeIsBoundedByItsRootLemma t) in
+  (rootIsEltOfTree t, Heap (merge' (reverseHeapList ts1) ts2))
 
 -- TODO self-invariant?
 {-@ rootIsEltOfTree :: t:Tree a -> {v:a | v = root t && S.member v (treeElts t)} @-}
@@ -408,37 +373,24 @@ merge' ts1@(t1:ts1') ts2@(t2:ts2')
 -- Basic operations
 ----------------------------------------------------------------
 
-{-| Checking validity of a heap.
--}
-
--- {-@ valid :: Heap a -> TT @-}
--- valid :: Ord a => Heap a -> Bool
--- valid t = isOrdered (heapSort t)
-
--- TODO prove that the elements are the same
-{-@ heapSort :: h:(Heap a) -> {v:IncrList a | len v = heapSize h} / [heapSize h] @-}
+{-@ heapSort :: h:Heap a -> {v:IncrList a | LEltsSize v (heapElts h) (heapSize h)} / [heapSize h] @-}
 heapSort :: Ord a => Heap a -> [a]
 heapSort (Heap []) = []
 heapSort h@(Heap (_:_)) =
   let (minElt, h') = deleteMin2 h in
   minElt : heapSort h'
 
--- TODO prove that the elements are the same
-{-@ sortUsingHeap :: xs:[a] -> {v:IncrList a | len v = len xs} @-}
+{-@ sortUsingHeap :: xs:[a] -> {v:IncrList a | LEltsSize v (listElts xs) (len xs)} @-}
 sortUsingHeap :: Ord a => [a] -> [a]
 sortUsingHeap = heapSort . fromList
 
+{-| Checking validity of a heap. -}
+{-@ valid :: Heap a -> TT @-}
+valid :: Ord a => Heap a -> Bool
+valid t = isOrdered (heapSort t)
 
--- {-@ measure isOrdered @-}
--- {-@ isOrdered :: [a] -> Bool @-}
--- isOrdered :: Ord a => [a] -> Bool
--- isOrdered [] = True
--- isOrdered [x] = True
--- isOrdered (x:xs) = x <= (headNE xs) && isOrdered xs
-
--- {-@ measure headNE @-}
--- {-@ headNE :: {v:[a] | 0 < len v} -> a @-}
--- headNE :: [a] -> a
--- headNE (x:_) = x
-
--- {-@ isOrderedIfIncrList :: IncrList a -> {v:[a] | isOrdered v} @-}
+{-@ isOrdered :: IncrList a -> TT @-}
+isOrdered :: Ord a => [a] -> Bool
+isOrdered [] = True
+isOrdered [_] = True
+isOrdered (x:y:xys) = x <= y && isOrdered (y:xys)
