@@ -234,23 +234,43 @@ fromList (x:xs) = insert x (fromList xs)
 
 {-| Creating a list from a heap. Worst-case: O(N) -}
 
--- TODO encode elt information in type
-{-@ toList :: h:Heap a -> {v:[a] | len v = heapSize h} @-}
+{-@ toList :: h:Heap a -> {v:[a] | listElts v = heapElts h && len v = heapSize h} @-}
 toList :: Heap a -> [a]
 toList (Heap ts) = treeListToList ts
 
-{-@ treeListToList :: ts:[Tree a] -> {v:[a] | len v = treeListSize ts} @-}
+{-@ appendPreservingListElts :: xs:[a] -> ys:[a] -> {v:[a] | listElts v = S.union (listElts xs) (listElts ys) && len v = len xs + len ys} @-}
+appendPreservingListElts :: [a] -> [a] -> [a]
+appendPreservingListElts [] ys = ys
+appendPreservingListElts (x:xs) ys = x : appendPreservingListElts xs ys
+
+{-@ treeListToList :: ts:[Tree a] -> {v:[a] | listElts v = treeListElts ts && len v = treeListSize ts} @-}
 treeListToList :: [Tree a] -> [a]
 treeListToList [] = []
-treeListToList (t:ts) = treeToList t ++ treeListToList ts
+treeListToList (t:ts) = appendPreservingListElts (treeToList t) (treeListToList ts)
 
-{-@ treeToList :: t:Tree a -> {v:[a] | len v = size t} @-}
--- {-@ treeToList :: t:Tree a -> {v:[a] | listElts v = treeElts t && len v = size t} @-}
+{-@ treeToList :: t:Tree a -> {v:[a] | listElts v = treeElts t && len v = size t} @-}
 treeToList :: Tree a -> [a]
 treeToList (Node x [] _ _) = [x]
-treeToList (Node x (t:ts) r sz) =
+treeToList bigT@(Node x subs@(t:ts) r sz) =
+  liquidAssert (treeListSize subs < size bigT) $
+  liquidAssert (size t <= treeListSize subs) $
+  let a = treeToList t in
+  -- liquidAssert (length a == size t) $
+  -- liquidAssert (listElts a == treeElts t) $
   let remainder = Node x ts (r - 1) (sz - size t) in
-  treeToList t ++ treeToList remainder
+  let b = treeToList remainder in
+  -- liquidAssert (length b == size remainder) $
+  -- liquidAssert (listElts b == treeElts remainder) $
+  let v = appendPreservingListElts a b in
+  -- liquidAssert (listElts v == S.union (listElts a) (listElts b)) $
+  -- liquidAssert (treeElts bigT == S.union (treeElts t) (treeElts remainder)) $
+  -- liquidAssert (treeElts bigT == S.union (listElts a) (listElts b)) $
+  -- liquidAssert (treeElts bigT == listElts v) $
+
+  -- liquidAssert (listElts v == S.union (treeElts t) (treeElts remainder)) $
+  -- liquidAssert (len v == size t + size remainder) $
+  v
+
 
 {-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
@@ -296,17 +316,16 @@ deleteMin2 h =
 rootIsEltOfTree :: Tree a -> a
 rootIsEltOfTree (Node x [] _ _) = x
 rootIsEltOfTree (Node x (t:ts) r sz) =
-    let remainder = Node x ts (r - 1) (sz - size t) in
-    rootIsEltOfTree remainder
+  let remainder = Node x ts (r - 1) (sz - size t) in
+  rootIsEltOfTree remainder
 
-
+-- TODO self-invariant?
 {-@ subtreeEltsAreEltsOfTree :: t:Tree a -> {v:[Tree a] | S.union (S.singleton (root t)) (treeListElts v) = treeElts t && 1 + treeListSize v = size t} @-}
 subtreeEltsAreEltsOfTree :: Tree a -> [Tree a]
 subtreeEltsAreEltsOfTree (Node _ [] _ _) = []
 subtreeEltsAreEltsOfTree (Node x (t:ts) r sz) =
     let remainder = Node x ts (r - 1) (sz - size t) in
     t : subtreeEltsAreEltsOfTree remainder
-
 
 {-@ deleteMin' :: xs:(NEList (Tree a)) ->
   {v:(Tree a, [AtLeastTree a (root (fst v))]) |
