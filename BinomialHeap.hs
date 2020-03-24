@@ -251,25 +251,9 @@ treeListToList (t:ts) = appendPreservingListElts (treeToList t) (treeListToList 
 {-@ treeToList :: t:Tree a -> {v:[a] | listElts v = treeElts t && len v = size t} @-}
 treeToList :: Tree a -> [a]
 treeToList (Node x [] _ _) = [x]
-treeToList bigT@(Node x subs@(t:ts) r sz) =
-  liquidAssert (treeListSize subs < size bigT) $
-  liquidAssert (size t <= treeListSize subs) $
-  let a = treeToList t in
-  -- liquidAssert (length a == size t) $
-  -- liquidAssert (listElts a == treeElts t) $
+treeToList (Node x (t:ts) r sz) =
   let remainder = Node x ts (r - 1) (sz - size t) in
-  let b = treeToList remainder in
-  -- liquidAssert (length b == size remainder) $
-  -- liquidAssert (listElts b == treeElts remainder) $
-  let v = appendPreservingListElts a b in
-  -- liquidAssert (listElts v == S.union (listElts a) (listElts b)) $
-  -- liquidAssert (treeElts bigT == S.union (treeElts t) (treeElts remainder)) $
-  -- liquidAssert (treeElts bigT == S.union (listElts a) (listElts b)) $
-  -- liquidAssert (treeElts bigT == listElts v) $
-
-  -- liquidAssert (listElts v == S.union (treeElts t) (treeElts remainder)) $
-  -- liquidAssert (len v == size t + size remainder) $
-  v
+  appendPreservingListElts (treeToList t) (treeToList remainder)
 
 
 {-| Finding the minimum element. Worst-case: O(log N), amortized: O(log N) -}
