@@ -1,0 +1,96 @@
+\documentclass{article}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage[]{algorithm2e}
+\usepackage{amssymb}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+\usepackage[margin=1in]{geometry}
+\title{Binomial Heap Invariants}
+\author{Josh Cohen}
+\begin{document}
+A binomial heap $h$ is defined as follows:
+\begin{enumerate}
+\item
+$h$ is a single node, and the rank is 0
+\item
+$h$ has rank $k$, $k$ is the height of the tree, $h$ has $k$ subtrees, and its $k$ subtrees are binomial heaps of rank $0, 1, ..., k-1$, respectively.
+\end{enumerate}
+$h$ also satisfies the min heap property, where the root is smaller than all children, but this has already been proved and is ignored.
+\\Consider the following sets of conditions on a tree $h$ of rank $k$. Call a tree that satisfies these conditions an alternate heap.
+\begin{enumerate}
+\item
+$h$ has $k$ subtrees, each of which are alternate heaps
+\item
+$h$ has $2^k$ elements
+\end{enumerate}
+We claim the following:
+\begin{theorem}
+Heap $h$ with rank $k$ is a binomial heap iff it is an alternate heap.
+\end{theorem}
+\begin{proof}
+We begin with the forward direction. Assume that $h$ is a binomial heap. Clearly there are $k$ subtrees by the binomial heap definition. Thus, we want to prove that there are $2^k$ elements in the heap. We use strong induction on $k$.
+\\If $k=0$, then $h$ is a single node, and $2^0=1$, proving the claim.
+\\If $k > 0$, then by the induction hypothesis, the $k$ subtrees have $2^0, 2^1, ..., 2^{k-1}$ elements each. Thus, the total number of elements is:
+\begin{align*}
+\sum_{i=0}^{k-1} 2^i + 1 = \frac{2^k - 1}{2-1} + 1 = 2^k
+\end{align*}
+proving the claim.
+\\Now we want to prove the reverse direction. This amounts to proving that, for each heap $h$ with rank $k$ such that there are $k$ subtrees (each alternate heaps) and $2^k$ elements, 
+\begin{enumerate}
+\item
+$k$ is the height of the tree
+\item
+The $k$ subtrees are binomial heaps of rank $0, 1, ..., k-1$.
+\end{enumerate}
+First, we will use the following lemma:
+\begin{lemma}
+Let $k\in\mathbb{N}$. Let $S$ be a set of size $k$ such that each element in $S$ is of the form $2^i$ for some $0 \leq i \leq k -1$. Suppose that $\sum_{s \in S} s = 2^k-1$. Then $S=\lbrace 2^0, 2^1,...,2^{k-1}\rbrace$.
+\end{lemma}
+\begin{proof}
+We prove the claim by induction on $k$. 
+\\If $k=0$, then the claim is trivially true, since $2^k -1 = 0$.
+\\Let $k > 0$. Assume the claim holds for any $A$ containing powers of 2 up to $2^{k-2}$ such that $|A|= k-1$, and we will show it holds for $S$ as described. We consider 2 cases:
+\begin{enumerate}
+\item
+Suppose $2^{k-1} \in S$. Then let $S' = S\setminus \lbrace 2^{k-1} \rbrace$. Then we have that:
+\begin{align*}
+\sum_{s\in S'} s = \sum_{s\in S} s - 2^{k-1} = 2^k-1-2^{k-1} = 2^k-\frac{2^k}{2} - 1 = 2^{k-1} - 1
+\end{align*}
+We know that $|S'| = k - 1$, and $\sum_{s\in S'} s = 2^{k-1} - 1$. $2^{k-1} \notin S'$ since it is larger than the sum. Thus, $S'$ contains powers of two up to $2^{k-2}$. Therefore, by the induction hypothesis, $S' = \lbrace 2^0, ..., 2^{k-2}\rbrace$, so $S = \lbrace 2^0, ..., 2^{k-2}, 2^{k-1}\rbrace$, as desired.
+\item
+Suppose $2^{k-1} \notin S$. Then, by the pigeonhole principle, there must be a value of $i$ such that $2^i$ appears in $S$ at least twice. Now construct a set $S'$ in the following manner:
+\\\begin{algorithm}[H]
+$S' = S$\;
+ \While{there are two identical elements in $S'$}{
+  let $i$ be a value such that $2^i$ appears in $S'$ at least twice\;
+  $S' = S'\setminus\lbrace 2^i, 2^i\rbrace\cup 2^{i+1}$\;
+  }
+\end{algorithm}
+In other words, $S'$ is a set of powers of two such that $\sum_{s\in S'} s = \sum_{s\in S} s$ but $S'$ contains no duplicates.
+\\We know that $|S'| < |S| = k$ since there was at least one pair of duplicates in $S$. We also know that no value in $S'$ can be larger than $2^{k-1}$, or else the sum would be at least $2^k$, a contradiction. Let $B = \lbrace 2^0, 2^1, ..., 2^{k-1}\rbrace$. We know that, since $S'$ has no duplicates, $S' \subsetneq B$. Thus, 
+\begin{align*}
+2^k-1 = \sum_{s\in S} s = \sum_{s\in S'} s < \sum_{s\in B} s = \sum_{i=0}^{k-1} 2^i = 2^k-1
+\end{align*}
+which is clearly a contradiction.
+\end{enumerate}
+This proves the lemma.
+\end{proof}
+Now we can easily prove the second property of a binomial heap with the following lemma: 
+\begin{lemma}
+Let $h$ be an alternate heap of rank $k$. Then the $k$ subtrees are binomial heaps of rank $0, 1, ..., k-1$.
+\end{lemma}
+\begin{proof}
+We prove the claim by strong induction on $k$.
+\\If $k=0$, then there are no subtrees, so the claim holds trivially.
+\\Suppose $k>0$. First, suppose that some subtree $h'$ has rank $l \geq k$. Then, since the properties hold recursively of the subtrees, $h'$ has $2^l \geq 2^k$ elements. Thus, the total number of elements in $h$ is at least $2^l + 1 > 2^k$, a contradiction. So all subtrees have rank strictly smaller than $k$.
+\\Thus, we know that all subtrees are binomial heaps by the induction hypothesis (since they have smaller rank). By Lemma 2, we know that the sizes of the subtrees must be $\lbrace 2^0, 2^1, ..., 2^{k-1}\rbrace$, and since the number of elements in any subtree of rank $r$ is $2^r$, we get the desired result.
+\end{proof}
+Finally, we prove that $k$ is the height of the tree by strong induction on $k$.
+\\If $k=0$, then there is $1$ element, so the height is 0.
+\\Suppose $k>0$. By the induction hypothesis, all of the subtrees' ranks are equal to their heights (since they must be strictly smaller than $k$, by the results of Lemma 3). By Lemma 3, the largest height among the subtrees is $k-1$. $h$ has height $1 + \max\lbrace \text{height of subtrees}\rbrace$ by definition. Thus, the height of $h$ is $1+(k-1) = k$, as desired.
+\\This proves the claim, and the equivalence of the two sets of invariants.
+\end{proof}
+\end{document}
