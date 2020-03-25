@@ -149,7 +149,7 @@ treeListElts [] = S.empty
 treeListElts (t:ts) = S.union (treeElts t) (treeListElts ts)
 
 {-@ measure treeElts @-}
-{-@ treeElts :: t:Tree a -> NESet a @-}
+{-@ treeElts :: t:Tree a -> {v:NESet a | v = S.union (S.singleton (root t)) (treeListElts (subtrees t))} @-}
 treeElts :: Ord a => Tree a -> Set a
 treeElts (Node x [] _ _) = S.singleton x
 treeElts (Node x (t:ts) r sz) =
