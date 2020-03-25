@@ -45,6 +45,8 @@ import Data.Set (Set)
 {-@ type NEList a = {xs:[a] | 0 < len xs} @-}
 {-@ type IncrList a = [a]<{\xi xj -> xi <= xj}> @-}
 
+{-@ type IncrRankList a = [Tree a]<{\ti tj -> rank ti < rank tj}> @-}
+
 {-@ measure treeListSize @-}
 {-@ treeListSize :: xs:[Tree a] -> {v:Nat | (len xs <= v) && (v = 0 <=> len xs = 0)} @-}
 treeListSize :: [Tree a] -> Int
@@ -83,7 +85,7 @@ heapSize (Heap ts) = treeListSize ts
 {-@ reflect pow2 @-}
 {-@ pow2 :: Nat -> Pos @-}
 pow2 :: Int -> Int
-pow2 n = if n == 0 then 1 else 2 * pow2 (n - 1)
+pow2 n = if n == 0 then 1 else let x = pow2 (n - 1) in x + x
 
 -- TODO We'd like to say rank :: {v:Nat | v = lubRank subtrees && v = len subtrees}
 -- but we need more lemmas to make this go through in link
@@ -93,7 +95,7 @@ pow2 n = if n == 0 then 1 else 2 * pow2 (n - 1)
         { root :: a
         , subtrees :: [AtLeastTree a root]
         , rank :: {v:Nat | v = len subtrees}
-        , size :: {v:Pos | v = 1 + treeListSize subtrees}
+        , size :: {v:Pos | v = 1 + treeListSize subtrees && v = pow2 rank}
         }
 @-}
 data Tree a =
@@ -104,6 +106,10 @@ data Tree a =
         , size :: Int
         }
     deriving (Eq)
+
+-- {-@ subtreesIncrRank :: Tree a -> IncrRankList a @-}
+-- subtreesIncrRank :: Tree a -> [Tree a]
+-- subtreesIncrRank  =
 
 -- | Trees with value at least X
 {-@ type AtLeastTree a X = Tree (AtLeast a X) @-}
@@ -156,6 +162,21 @@ treeElts (Node x (t:ts) r sz) =
   let remainder = Node x ts (r - 1) (sz - size t) in
   S.union (treeElts t) (treeElts remainder)
 
+{-@ measure reverseSubtrees @-}
+{-@ reverseSubtrees :: t:Tree a -> {v:Tree a | size v = size t} @-}
+reverseSubtrees :: Tree a -> Tree a
+reverseSubtrees (Node x ts r sz) = Node x (reverseHeapList ts) r sz
+
+-- {-@ reverseList :: xs:[a] -> {v:[a] | LEltsSize v (listElts xs) (len xs)} @-}
+-- reverseList :: [a] -> [a]
+-- reverseList xs = reverseListAux xs []
+
+-- {-@ reverseListAux :: xs:[a] -> acc:[a] ->
+--   {v:[a] | LEltsSize v (S.union (listElts xs) (listElts acc)) (len xs + len acc)} @-}
+-- reverseListAux :: [a] -> [a] -> [a]
+-- reverseListAux [] acc = acc
+-- reverseListAux (x:xs) acc = reverseListAux xs (x:acc)
+
 {-@ measure listElts @-}
 {-@ listElts :: [a] -> Set a @-}
 listElts :: Ord a => [a] -> Set a
@@ -181,13 +202,15 @@ assertAtLeastTreeList _ _ x = x
 assertAtLeastHeap :: a -> Heap a -> b -> b
 assertAtLeastHeap _ _ x = x
 
-{-@ link :: t1:(Tree a) -> t2:(Tree a) ->
+{-@ link :: t1:Tree a -> t2:{v:Tree a | rank t1 = rank t2} ->
   {v:Tree a | TEltsSize v (S.union (treeElts t1) (treeElts t2)) (size t1 + size t2)}
 @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
 link t1@(Node x1 ts1 r1 sz1) t2@(Node x2 ts2 r2 sz2)
-  | x1 <= x2  = Node x1 ((treeAtLeastRoot t2):ts1) (1 + r1) (sz1 + sz2)
-  | otherwise = Node x2 ((treeAtLeastRoot t1):ts2) (1 + r2) (sz1 + sz2)
+  | x1 <= x2  = liquidAssert (sz1 + sz1 == pow2 (r1 + 1)) $
+                Node x1 ((treeAtLeastRoot t2):ts1) (1 + r1) (sz1 + sz2)
+  | otherwise = liquidAssert (sz2 + sz2 == pow2 (r2 + 1)) $
+                Node x2 ((treeAtLeastRoot t1):ts2) (1 + r2) (sz1 + sz2)
 
 {-@ empty :: {v:Heap a | HEltsSize v S.empty 0} @-}
 empty :: Heap a
@@ -200,7 +223,9 @@ null h = heapSize h == 0
 
 {-@ singleton :: x:a -> {v:Heap a | HEltsSize v (S.singleton x) 1} @-}
 singleton :: Ord a => a -> Heap a
-singleton x = Heap [Node x [] 0 1]
+singleton x =
+  liquidAssert (pow2 0 == 1) $
+  Heap [Node x [] 0 1]
 
 {-| Insertion. Worst-case: O(log N), amortized: O(1)
 
@@ -214,7 +239,7 @@ Properties we would like to verify:
 {-@ insert :: x:a -> h:Heap a ->
   {v:Heap a | HEltsSize v (S.union (S.singleton x) (heapElts h)) (1 + heapSize h)} @-}
 insert :: Ord a => a -> Heap a -> Heap a
-insert x (Heap ts) = Heap (insert' (Node x [] 0 1) ts)
+insert x (Heap ts) = liquidAssert (pow2 0 == 1) $ Heap (insert' (Node x [] 0 1) ts)
 
 {-@ insert' :: t:Tree a -> ts:[Tree a] ->
   {v:[Tree a] | TsEltsSize v (S.union (treeElts t) (treeListElts ts)) (size t + treeListSize ts) }
@@ -223,6 +248,9 @@ insert' :: Ord a => Tree a -> [Tree a] -> [Tree a]
 insert' t [] = [t]
 insert' t ts@(t':ts')
   | rank t < rank t' = t : ts
+  -- I don't believe the following case can ever since the rank of subtrees
+  -- should be strictly increasing but we need it to satisfy Liquid Haskell
+  | rank t > rank t' = t' : t : ts'
   | otherwise        = insert' (link t t') ts'
 
 {-@ fromList :: xs:[a] -> {v:Heap a | HEltsSize v (listElts xs) (len xs)} @-}
@@ -234,21 +262,21 @@ fromList (x:xs) = insert x (fromList xs)
 
 {-| Creating a list from a heap. Worst-case: O(N) -}
 
-{-@ toList :: h:Heap a -> {v:[a] | listElts v = heapElts h && len v = heapSize h} @-}
+{-@ toList :: h:Heap a -> {v:[a] | LEltsSize v (heapElts h) (heapSize h)} @-}
 toList :: Heap a -> [a]
 toList (Heap ts) = treeListToList ts
 
-{-@ appendPreservingListElts :: xs:[a] -> ys:[a] -> {v:[a] | listElts v = S.union (listElts xs) (listElts ys) && len v = len xs + len ys} @-}
+{-@ appendPreservingListElts :: xs:[a] -> ys:[a] -> {v:[a] | LEltsSize v (S.union (listElts xs) (listElts ys)) (len xs + len ys)} @-}
 appendPreservingListElts :: [a] -> [a] -> [a]
 appendPreservingListElts [] ys = ys
 appendPreservingListElts (x:xs) ys = x : appendPreservingListElts xs ys
 
-{-@ treeListToList :: ts:[Tree a] -> {v:[a] | listElts v = treeListElts ts && len v = treeListSize ts} @-}
+{-@ treeListToList :: ts:[Tree a] -> {v:[a] | LEltsSize v (treeListElts ts) (treeListSize ts)} @-}
 treeListToList :: [Tree a] -> [a]
 treeListToList [] = []
 treeListToList (t:ts) = appendPreservingListElts (treeToList t) (treeListToList ts)
 
-{-@ treeToList :: t:Tree a -> {v:[a] | listElts v = treeElts t && len v = size t} @-}
+{-@ treeToList :: t:Tree a -> {v:[a] | LEltsSize v (treeElts t) (size t)} @-}
 treeToList :: Tree a -> [a]
 treeToList (Node x [] _ _) = [x]
 treeToList (Node x (t:ts) r sz) =
@@ -264,14 +292,15 @@ minimum = fst . deleteMin2
 
 {-| Deleting the minimum element. Worst-case: O(log N), amortized: O(log N) -}
 
-{-@ reverseHeapList :: ts:[Tree a] -> {v:[Tree a] | TsEltsSize v (treeListElts ts) (treeListSize ts)} @-}
+{-@ reverseHeapList :: ts:[Tree a] -> {v:[Tree a] | TsEltsSize v (treeListElts ts) (treeListSize ts) && len v = len ts} @-}
 reverseHeapList :: [Tree a] -> [Tree a]
 reverseHeapList ts = reverseHeapListAux ts []
 
 {-@ reverseHeapListAux :: ts:[Tree a] -> acc:[Tree a] ->
   {v:[Tree a] | TsEltsSize v (
                   S.union (treeListElts ts) (treeListElts acc))(
-                  treeListSize ts + treeListSize acc)}
+                  treeListSize ts + treeListSize acc)
+             && len v = len ts + len acc}
 @-}
 reverseHeapListAux :: [Tree a] -> [Tree a] -> [Tree a]
 reverseHeapListAux [] acc = acc
