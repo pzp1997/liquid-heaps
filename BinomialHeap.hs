@@ -155,17 +155,17 @@ treeListElts [] = S.empty
 treeListElts (t:ts) = S.union (treeElts t) (treeListElts ts)
 
 {-@ measure treeElts @-}
-{-@ treeElts :: t:Tree a -> NESet a @-}
+{-@ treeElts :: t:Tree a -> {v:NESet a | v = S.union (S.singleton (root t)) (treeListElts (subtrees t))} @-}
 treeElts :: Ord a => Tree a -> Set a
 treeElts (Node x [] _ _) = S.singleton x
 treeElts (Node x (t:ts) r sz) =
   let remainder = Node x ts (r - 1) (sz - size t) in
   S.union (treeElts t) (treeElts remainder)
 
-{-@ measure reverseSubtrees @-}
-{-@ reverseSubtrees :: t:Tree a -> {v:Tree a | size v = size t} @-}
-reverseSubtrees :: Tree a -> Tree a
-reverseSubtrees (Node x ts r sz) = Node x (reverseHeapList ts) r sz
+-- {-@ measure reverseSubtrees @-}
+-- {-@ reverseSubtrees :: t:Tree a -> {v:Tree a | size v = size t} @-}
+-- reverseSubtrees :: Tree a -> Tree a
+-- reverseSubtrees (Node x ts r sz) = Node x (reverseHeapList ts) r sz
 
 -- {-@ reverseList :: xs:[a] -> {v:[a] | LEltsSize v (listElts xs) (len xs)} @-}
 -- reverseList :: [a] -> [a]
@@ -322,23 +322,29 @@ deleteMin2 :: Ord a => Heap a -> (a, Heap a)
 deleteMin2 h =
   let (t, ts2) = deleteMin' (unheapNonempty h) in
   let ts1 = subtreeEltsAreEltsOfTree (treeAtLeastRoot t) in
-  (rootIsEltOfTree t, Heap (merge' (reverseHeapList ts1) ts2))
+  (root t, Heap (merge' (reverseHeapList ts1) ts2))
+
+-- rootIsEltOfTree t
 
 -- TODO self-invariant?
-{-@ rootIsEltOfTree :: t:Tree a -> {v:a | v = root t && S.member v (treeElts t)} @-}
-rootIsEltOfTree :: Tree a -> a
-rootIsEltOfTree (Node x [] _ _) = x
-rootIsEltOfTree (Node x (t:ts) r sz) =
-  let remainder = Node x ts (r - 1) (sz - size t) in
-  rootIsEltOfTree remainder
+-- {-@ rootIsEltOfTree :: t:Tree a -> {v:a | v = root t && S.member v (treeElts t)} @-}
+-- rootIsEltOfTree :: Tree a -> a
+-- rootIsEltOfTree (Node x [] _ _) = x
+-- rootIsEltOfTree (Node x (t:ts) r sz) =
+--   let remainder = Node x ts (r - 1) (sz - size t) in
+--   rootIsEltOfTree remainder
 
 -- TODO self-invariant?
-{-@ subtreeEltsAreEltsOfTree :: t:Tree a -> {v:[Tree a] | S.union (S.singleton (root t)) (treeListElts v) = treeElts t && 1 + treeListSize v = size t} @-}
-subtreeEltsAreEltsOfTree :: Tree a -> [Tree a]
-subtreeEltsAreEltsOfTree (Node _ [] _ _) = []
-subtreeEltsAreEltsOfTree (Node x (t:ts) r sz) =
-    let remainder = Node x ts (r - 1) (sz - size t) in
-    t : subtreeEltsAreEltsOfTree remainder
+{-@ subtreeEltsAreEltsOfTree :: t:Tree a -> {v:[Tree a] | S.union (S.singleton (root t)) (treeListElts v) = treeElts t && 1 + treeListSize v = size t } @-}
+subtreeEltsAreEltsOfTree :: Ord a => Tree a -> [Tree a]
+subtreeEltsAreEltsOfTree t =
+  liquidAssert (S.union (S.singleton (root t)) (treeListElts (subtrees t)) == treeElts t) $
+  liquidAssert (1 + treeListSize (subtrees t) == size t) $
+   subtrees t
+-- subtreeEltsAreEltsOfTree (Node x (t:ts) r sz) =
+--   liquidAssert (subtrees )
+--     let remainder = Node x ts (r - 1) (sz - size t) in
+--     t : subtreeEltsAreEltsOfTree remainder
 
 {-@ deleteMin' :: xs:(NEList (Tree a)) ->
   {v:(Tree a, [AtLeastTree a (root (fst v))]) |
