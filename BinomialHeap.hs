@@ -91,7 +91,7 @@ pow2 n = if n == 0 then 1 else 2 * pow2 (n - 1)
 {-@ data Tree [size] a =
     Node
         { root :: a
-        , subtrees :: [AtLeastTree a root]
+        , subtrees :: Subtrees a
         , rank :: {v:Nat | v = len subtrees}
         , size :: {v:Pos | v = 1 + treeListSize subtrees}
         }
@@ -104,6 +104,13 @@ data Tree a =
         , size :: Int
         }
     deriving (Eq)
+
+{-@ measure rank' @-}
+{-@ rank' :: t:Tree a -> {v:Nat | v = len (subtrees t)} @-}
+rank' :: Tree a -> Int
+rank' (Node _ _ r _) = r
+
+{-@ type Subtrees a = [AtLeastTree a root]<{\ti tj -> rank' ti < rank' tj}> @-}
 
 -- | Trees with value at least X
 {-@ type AtLeastTree a X = Tree (AtLeast a X) @-}
@@ -127,7 +134,7 @@ instance (Eq a, Ord a) => Eq (Heap a) where
 -- TODO maybe use self-invariants to encode this
 {-@ treeAtLeastRoot :: t:Tree a ->
   {v:AtLeastTree a (root t) | TEltsSize v (treeElts t) (size t)
-                           && root v = root t} @-}
+                           && root v = root t && rank v = rank t} @-}
 treeAtLeastRoot :: Tree a -> Tree a
 treeAtLeastRoot (Node x ts r sz) = Node x ts r sz
 
@@ -181,13 +188,18 @@ assertAtLeastTreeList _ _ x = x
 assertAtLeastHeap :: a -> Heap a -> b -> b
 assertAtLeastHeap _ _ x = x
 
-{-@ link :: t1:(Tree a) -> t2:(Tree a) ->
+{-@ link :: t1:Tree a -> t2:{v:Tree a | rank t1 = rank t2} ->
   {v:Tree a | TEltsSize v (S.union (treeElts t1) (treeElts t2)) (size t1 + size t2)}
 @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
 link t1@(Node x1 ts1 r1 sz1) t2@(Node x2 ts2 r2 sz2)
-  | x1 <= x2  = Node x1 ((treeAtLeastRoot t2):ts1) (1 + r1) (sz1 + sz2)
-  | otherwise = Node x2 ((treeAtLeastRoot t1):ts2) (1 + r2) (sz1 + sz2)
+  | x1 <= x2  = Node x1 (snoc ts1 (treeAtLeastRoot t2)) (1 + r1) (sz1 + sz2)
+  | otherwise = Node x2 (snoc ts2 (treeAtLeastRoot t1)) (1 + r2) (sz1 + sz2)
+
+{-@ snoc :: xs:[a] -> x:a -> [a] @-}
+snoc :: [a] -> a -> [a]
+snoc [] y = [y]
+snoc (x:xs) y = x : snoc xs y
 
 {-@ empty :: {v:Heap a | HEltsSize v S.empty 0} @-}
 empty :: Heap a
@@ -223,6 +235,9 @@ insert' :: Ord a => Tree a -> [Tree a] -> [Tree a]
 insert' t [] = [t]
 insert' t ts@(t':ts')
   | rank t < rank t' = t : ts
+  -- I don't believe the following case can ever happen since the rank of
+  -- subtrees should be strictly increasing but we need it to satisfy Liquid Haskell
+  | rank t > rank t' = t' : insert' t ts'
   | otherwise        = insert' (link t t') ts'
 
 {-@ fromList :: xs:[a] -> {v:Heap a | HEltsSize v (listElts xs) (len xs)} @-}
