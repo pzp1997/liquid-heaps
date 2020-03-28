@@ -53,3 +53,19 @@ deleteMin' (t:ts) =
     (t, vSnd)
   )
   else (t', t:ts')
+
+
+# Strange Errors
+
+**** RESULT: ERROR *************************************************************
+
+
+ /home/josh/Documents/HW/CIS673/cis673-proj/BinomialHeap.hs:263:28-39: Error: Uh oh.
+  
+ 263 |   assert (1 + treeListSize (subtrees t) == size t) $
+                                  ^^^^^^^^^^^^
+  
+     (Another Broken Test!!!) splitc unexpected:
+(RVar LIQUID$dummy)
+  <:
+(RApp Data.Heap.Binominal.Tree<[]>(RVar a))
