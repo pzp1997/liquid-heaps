@@ -21,20 +21,14 @@ import qualified Data.List as List
 {-@ type AtLeast a X = {n:a | X <= n} @-}
 {-@ type Pos = GeInt 1 @-}
 
-{-@ measure treeListSize @-}
-{-@ treeListSize :: xs:[Tree a] -> {v:Nat | (len xs <= v) && (v = 0 <=> len xs = 0)} @-}
-treeListSize :: [Tree a] -> Int
-treeListSize [] = 0
-treeListSize (x:xs) = size x + treeListSize xs
-
 
 --Binomial heap Invariants: if rank of heap is r, then subtrees have ranks (in order) 0, 1, ..., r-1 and if rank is 0, then heap has 1 elt
-{-@ data Tree [size] a =
+{-@ data Tree  a =
     Node
         { root :: a
         , subtrees :: Subtrees a
-        , rank :: {v:Nat | v = len subtrees}
-        , size :: {v:Pos | v = 1 + treeListSize subtrees}
+        , rank :: Nat
+        , size :: Pos
         }
 @-}
 data Tree a =
@@ -52,7 +46,7 @@ rank' :: Tree a -> Int
 rank' (Node _ _ r _) = r
 
 {-@ type AtLeastTree a X = Tree (AtLeast a X) @-}
-{-@ type Subtrees a = [AtLeastTree a root]<{\ti tj -> rank' ti < rank' tj}> @-}
+{-@ type Subtrees a = [AtLeastTree a root]<{\ti tj -> rank' ti = rank' tj + 1}> @-}
 
 {-@ test:: Tree a -> a @-}
 test :: Ord a => Tree a -> a
