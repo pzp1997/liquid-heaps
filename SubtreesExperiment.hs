@@ -6,19 +6,22 @@
 module SubtreesExperiment where
 
 import Language.Haskell.Liquid.Prelude (liquidAssert)
+import qualified Language.Haskell.Liquid.Bag as B
 
-import Prelude hiding (head, last)
+import Prelude hiding (head, last, tail)
 
 {-@
-data Tree a =
+data Tree [rank] a =
     Node
-        { rank :: Nat
+        { root :: a
+        , rank :: Nat
         , subtrees :: {ts:[{t:Tree a | rank > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts = rank}
         }
 @-}
 data Tree a =
     Node
-        { rank :: Int
+        { root :: a
+        , rank :: Int
         , subtrees :: [Tree a]
         }
     deriving (Eq)
@@ -31,6 +34,22 @@ data Tree a =
 -- {-@ firstSubtree :: {t:Tree a | len (subtrees t) > 0} -> {v:Tree a | treeRank v + 1 = treeRank t} @-}
 -- firstSubtree (Node r (t:ts)) = t
 
+-- {-@ measure treeElts @-}
+-- {-@ treeElts :: t:Tree a -> {v:B.Bag a | v = B.put (root t) (treeListElts (subtrees t))} @-}
+-- {-@ treeElts :: Tree a -> B.Bag a @-}
+-- treeElts :: Ord a => Tree a -> B.Bag a
+-- treeElts (Node x _ []) = B.put x B.empty
+-- treeElts (Node x r tts@(_:_)) =
+--     let t = head (firstTree tts) in
+--     let ts = tail tts in
+--     let remainder = Node x (r - 1) ts in
+--     liquidAssert (treeRank t == length tts - 1) $
+--     B.union (treeElts t) (treeElts remainder)
+
+-- {-@ measure treeListElts @-}
+-- treeListElts :: Ord a => [Tree a] -> B.Bag a
+-- treeListElts [] = B.empty
+-- treeListElts (t:ts) = B.union (treeElts t) (treeListElts ts)
 
 {-@ measure head @-}
 {-@ head :: {xs:[a] | len xs > 0} -> a @-}
@@ -60,4 +79,4 @@ firstTree (t:ts@(_:_)) =
 
 {-@ measure treeRank @-}
 {-@ treeRank :: Tree a -> Nat @-}
-treeRank (Node r _) = r
+treeRank (Node _ r _) = r
