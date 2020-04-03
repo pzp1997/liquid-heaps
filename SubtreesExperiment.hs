@@ -1,3 +1,8 @@
+-- Automatically generate singleton types for data constructors
+{-@ LIQUID "--exactdc" @-}
+-- Disable ADTs (only used with exactDC)
+{-@ LIQUID "--no-adt" @-}
+
 module SubtreesExperiment where
 
 import Language.Haskell.Liquid.Prelude (liquidAssert)
@@ -35,44 +40,23 @@ head (x:_) = x
 {-@ tail :: {xs:[a] | len xs > 0} -> [a] @-}
 tail (_:xs) = xs
 
-{-@ lemma :: {n:Int | n >= 1} -> {ts:[{t:Tree a | n > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts > 0} -> {v:[{t:Tree a | n - 1 > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | v = tail ts} @-}
-lemma :: Int -> [Tree a] -> [Tree a]
-lemma n (_:ts) = ts
+{-@ type Pos = {n:Int | n >= 1} @-}
 
-{-@ firstTree :: {n:Int | n >= 1} -> {ts:[{t:Tree a | n > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts = n} -> {v:[Tree a] | treeRank (head v) = n - 1 && len v = len ts && head v = head ts} @-}
-firstTree :: Eq a => Int -> [Tree a] -> [Tree a]
-firstTree n (t:[]) =
-    let v = (t:[]) in
-    -- liquidAssert (n == 1) $
-    -- liquidAssert (treeRank t == 0) $
-    -- liquidAssert (treeRank (head v) == 0) $
-    v
-firstTree n (t:ts@(_:_)) =
-    -- liquidAssert (length ts > 0) $
-    let refinedTs = lemma n (t:ts) in
-    -- liquidAssert (refinedTs == ts) $
-    -- liquidAssert (treeRank (head refinedTs) < n - 1) $
-    -- liquidAssert (treeRank t > treeRank (head refinedTs)) $
-    -- liquidAssert (treeRank t < n) $
-    let acc = firstTree (n - 1) refinedTs in
-    -- liquidAssert (length refinedTs > 0) $
-    -- liquidAssert (length acc == length refinedTs) $
+{-@ reflect lemma @-}
+{-@ lemma :: {ts:[{t:Tree a | len ts > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts > 0} -> {v:[{t:Tree a | len ts - 1 > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | v = tail ts} @-}
+lemma :: [Tree a] -> [Tree a]
+lemma (_:ts) = ts
 
+{-@ reflect firstTree @-}
+{-@ firstTree :: {ts:[{t:Tree a | len ts > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts >= 1} -> {v:[Tree a] | treeRank (head v) = len ts - 1 && len v = len ts && head v = head ts} @-}
+firstTree :: Eq a => [Tree a] -> [Tree a]
+firstTree [t] = [t]
+firstTree (t:ts@(_:_)) =
+    let refinedTs = lemma (t:ts) in
+    let acc = firstTree refinedTs in
     -- NOTE: if we uncomment this assert, the file no longer verifies...
     -- liquidAssert (head acc == head refinedTs) $
-    -- liquidAssert (treeRank t == n - 1) $
-
-    -- liquidAssert (treeRank (head acc) == (n - 1) - 1) $
-    -- let v = t:acc in
-    -- liquidAssert (treeRank (head v) == (n - 1)) $
-    -- v
     t:acc
-
--- {v:[Tree a] | treeRank (head v) = n - 1 && len v = len ts}
-
--- {-@ lastSubtree :: {t:Tree a | len (subtrees t) > 0} -> {v:Tree a | treeRank v + 1 = treeRank t} @-}
--- lastSubtree (Node r (t:ts)) = lastSubtree t
--- lastSubtree
 
 {-@ measure treeRank @-}
 {-@ treeRank :: Tree a -> Nat @-}
