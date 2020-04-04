@@ -106,6 +106,8 @@ listElts (x : xs) = B.union (B.put x B.empty) (listElts xs)
 --Verification of [link]
 
 {-@ predicate TEltsSize T X Y = (treeElts T = X && size T = Y )@-}
+{-@ predicate HEltsSize H X Y = (heapElts H = X && heapSize H = Y) @-}
+{-@ predicate TsEltsSize Ts X Y = (treeListElts Ts = X && treeListSize Ts = Y) @-}
 
 {-@ treeAtLeastRoot :: t:Tree a ->
   {v:AtLeastTree a (root t) | TEltsSize v (treeElts t) (size t)
@@ -115,7 +117,7 @@ treeAtLeastRoot (Node x r ts sz) = Node x r ts sz
 
 --NOTE: need all 3 of these assertions for the function to verify
 --Link only works on Trees with equal ranks
-{-@ link :: t1:(Tree a) -> {t2:(Tree a) | treeRank t2 = treeRank t1} ->
+{-@ link :: t1:(Tree a) -> {t2:(Tree a) | rank t2 = rank t1} ->
   {v:Tree a | TEltsSize v (B.union (treeElts t1) (treeElts t2)) (size t1 + size t2) && rank v = rank t1 + 1}
 @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
@@ -128,3 +130,41 @@ link t1@(Node x1 r1 ts1 sz1) t2@(Node x2 r2 ts2 sz2)
       liquidAssert (r2 == r1) $
       liquidAssert (treeElts new == B.union (treeElts t1) (treeElts t2)) $
          new
+
+-- simple functions
+
+{-@ measure heapSize @-}
+{-@ heapSize :: h:Heap a -> {v:Nat | (len (unheap h) <= v) && (v = treeListSize (unheap h))} @-}
+heapSize :: Heap a -> Int
+heapSize (Heap ts) = treeListSize ts
+
+
+{-@ empty :: {v:Heap a | HEltsSize v B.empty 0} @-}
+empty :: Heap a
+empty = Heap []
+
+-- {-@ null :: h:(Heap a) -> {v:Bool | v <=> heapElts h = S.empty} @-}
+{-@ null :: h:(Heap a) -> {v:Bool | v <=> heapSize h == 0} @-}
+null :: Heap a -> Bool
+null h = heapSize h == 0
+
+{-@ singleton :: x:a -> {v:Heap a | HEltsSize v (B.put x B.empty) 1} @-}
+singleton :: Ord a => a -> Heap a
+singleton x = Heap [Node x 0 [] 1]
+
+--Insert
+--NOTE: the insert' function we looked at was wrong - we should only ever be calling link on trees of equal rank
+{-@ insert' :: t:Tree a -> ts:[Tree a] ->
+  {v:[Tree a] | TsEltsSize v (B.union (treeElts t) (treeListElts ts)) (size t + treeListSize ts) }
+@-}
+insert' :: Ord a => Tree a -> [Tree a] -> [Tree a]
+insert' t [] = [t]
+insert' t ts@(t':ts')
+  | rank t < rank t' = t : ts
+  | rank t > rank t' = t' : insert' t ts'
+  | otherwise       = insert' (link t t') ts'
+
+{-@ insert :: x:a -> h:Heap a ->
+  {v:Heap a | HEltsSize v (B.union (B.put x B.empty) (heapElts h)) (1 + heapSize h)} @-}
+insert :: Ord a => a -> Heap a -> Heap a
+insert x (Heap ts) = Heap (insert' (Node x 0 [] 1) ts)
