@@ -41,6 +41,28 @@ treeElts (Node x r tts@(_:ts)) =
     B.union (treeElts t) (treeElts remainder) else B.empty
 
 
+<<<<<<< HEAD
+=======
+ {-@ measure treeElts @-}
+{-@ treeElts :: t:Tree a -> {v:B.Bag a | v = B.put (root t) (treeListElts (subtrees t))} @-}
+--{-@ treeElts :: Tree a -> B.Bag a @-}
+treeElts :: Ord a => Tree a -> B.Bag a
+treeElts (Node x _ []) = B.put x B.empty
+treeElts (Node x r tts@(_:ts)) =
+    let refinedTs = firstTree tts in
+    let t = head refinedTs in
+    let remainder = Node x (r - 1) ts in
+    --NOTE: incredible hack: we needed the following assertion for the proof to hold
+    --liquidAssert (rank t == treeRank t) $
+    --so instead, we can do the following (since the statment is always true)
+    if (rank t == treeRank t) then
+    B.union (treeElts t) (treeElts remainder) else B.empty
+
+{-@ rankEqual :: t:(Tree a) -> {r: Nat | r = treeRank t && r = rank t} @-}
+rankEqual :: Tree a -> Int
+rankEqual (Node _ r _) = r
+
+>>>>>>> d630c28f5cb48ed5ba28bc1d1bb7077335d40d9d
 {-@ measure treeListElts @-}
 treeListElts :: Ord a => [Tree a] -> B.Bag a
 treeListElts [] = B.empty
