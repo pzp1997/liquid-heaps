@@ -12,6 +12,8 @@ import Prelude hiding (head, last, tail)
 
 {-@ type AtLeast a X = {n:a | X <= n} @-}
 {-@ type AtLeastTree a X = Tree (AtLeast a X) @-}
+{-@ type NEList a = {xs:[a] | 0 < len xs} @-}
+{-@ type NEHeap a = {h:Heap a | 0 < len (unheap h)} @-}
 
 {-@ measure treeListSize @-}
 {-@ treeListSize :: xs:[Tree a] -> {v:Nat | (len xs <= v) && (v = 0 <=> len xs = 0)} @-}
@@ -201,3 +203,99 @@ treeToList (Node x r tts@(_:ts) sz) =
     liquidAssert (rank t == treeRank t) $
     appendPreservingListElts (treeToList t) (treeToList remainder)
 
+--deleteMin
+
+{-@ deleteMin' :: xs:(NEList (Tree a)) ->
+  {v:(Tree a, [AtLeastTree a (root (fst v))]) |
+    B.union (treeElts (fst v)) (treeListElts (snd v)) = treeListElts xs &&
+    size (fst v) + treeListSize (snd v) = treeListSize xs}
+@-}
+deleteMin' :: Ord a => [Tree a] -> (Tree a, [Tree a])
+deleteMin' [t] = (t, [])
+deleteMin' (t:ts) =
+  let (t', ts') = deleteMin' ts in
+  if root t < root t'
+  then (t, (treeAtLeastRoot t'):ts')
+  else (t', (treeAtLeastRoot t):ts')
+
+--helpers for deleteMin2
+{-@ unheapNonempty :: h:NEHeap a -> {v:NEList (Tree a) | TsEltsSize v (heapElts h) (heapSize h)} @-}
+unheapNonempty :: Heap a -> [Tree a]
+unheapNonempty (Heap ts@(_:_)) = ts
+
+{-@ subtreeEltsAreEltsOfTree :: t:Tree a -> {v:[Tree a] | B.union (B.put (root t) B.empty) (treeListElts v) = treeElts t && 1 + treeListSize v = size t} @-}
+subtreeEltsAreEltsOfTree :: Tree a -> [Tree a]
+subtreeEltsAreEltsOfTree (Node _ _ [] _) = []
+subtreeEltsAreEltsOfTree (Node x r tts@(_:ts) sz) =
+    let refinedTs = firstTree tts in
+    let t = head refinedTs in
+    let remainder = Node x (r - 1) ts (sz - (size t)) in
+    --just like treeElts, need this
+    liquidAssert (rank t == treeRank t) $
+    t : subtreeEltsAreEltsOfTree remainder
+
+{-@ reverseHeapList :: ts:[Tree a] -> {v:[Tree a] | TsEltsSize v (treeListElts ts) (treeListSize ts)} @-}
+reverseHeapList :: [Tree a] -> [Tree a]
+reverseHeapList ts = reverseHeapListAux ts []
+
+{-@ reverseHeapListAux :: ts:[Tree a] -> acc:[Tree a] ->
+  {v:[Tree a] | TsEltsSize v (
+                  B.union (treeListElts ts) (treeListElts acc))(
+                  treeListSize ts + treeListSize acc)}
+@-}
+reverseHeapListAux :: [Tree a] -> [Tree a] -> [Tree a]
+reverseHeapListAux [] acc = acc
+reverseHeapListAux (t:ts) acc = reverseHeapListAux ts (t:acc)
+
+--TODO: this should pass, not sure why it isn't, not a huge deal either way (only if we care about postcondition of minimum)
+-- {-@ rootIsEltOfTree :: t:Tree a -> {v:a | v = root t && B.get v (treeElts t) > 0} @-}
+-- rootIsEltOfTree :: Ord a => Tree a -> a
+-- rootIsEltOfTree (Node x _ [] _) = x
+-- rootIsEltOfTree (Node x r tts@(_:ts) sz) =
+--   let refinedTs = firstTree tts in
+--     let t = head refinedTs in
+--     let remainder = Node x (r - 1) ts (sz - (size t)) in
+--     --just like treeElts, need this
+--     liquidAssert (rank t == treeRank t) $
+--     liquidAssert (root remainder == x) $
+--     liquidAssert (treeElts (Node x r tts sz) == B.union (treeElts t)(treeElts remainder) ) $
+--     let recur = rootIsEltOfTree remainder in
+--     liquidAssert (B.get x (treeElts (remainder)) > 0) $
+--     recur
+  
+
+
+{-@ deleteMin2 :: h:NEHeap a ->
+  {v:(a, Heap {x:a | (fst v) <= x}) |
+    B.union (B.put (fst v) B.empty) (heapElts (snd v)) = heapElts h &&
+    1 + heapSize (snd v) = heapSize h} @-}
+deleteMin2 :: Ord a => Heap a -> (a, Heap a)
+deleteMin2 h =
+  let (t, ts2) = deleteMin' (unheapNonempty h) in
+  let ts1 = subtreeEltsAreEltsOfTree (treeAtLeastRoot t) in
+  (root t, Heap (merge' (reverseHeapList ts1) ts2))
+
+-- TODO, add back postcondition on input, something like (not sure best way to phrase for bags), may need to strengthen deleteMin2 or add back rootIsEltOfTree
+-- bags are not as nice for sets as membership
+--{-@ minimum :: h:NEHeap a -> {v:a | B.get v (heapElts h) > 0} @-}
+{-@ minimum :: h:NEHeap a -> a @-}
+minimum :: Ord a => Heap a -> a
+minimum = fst . deleteMin2
+
+-- merge
+
+{-@ merge :: h1:Heap a -> h2:Heap a ->
+  {v:Heap a | HEltsSize v (B.union (heapElts h1) (heapElts h2)) (heapSize h1 + heapSize h2)} @-}
+merge :: Ord a => Heap a -> Heap a -> Heap a
+merge (Heap ts1) (Heap ts2) = Heap (merge' ts1 ts2)
+
+{-@ merge' :: ts1:[Tree a] -> ts2:[Tree a] ->
+  {v:[Tree a] | treeListElts v = B.union (treeListElts ts1) (treeListElts ts2)
+             && treeListSize v = treeListSize ts1 + treeListSize ts2} @-}
+merge' :: Ord a => [Tree a] -> [Tree a] -> [Tree a]
+merge' ts1 [] = ts1
+merge' [] ts2 = ts2
+merge' ts1@(t1:ts1') ts2@(t2:ts2')
+  | rank t1 < rank t2 = t1 : merge' ts1' ts2
+  | rank t2 < rank t1 = t2 : merge' ts1 ts2'
+  | otherwise         = insert' (link t1 t2) (merge' ts1' ts2')
