@@ -14,6 +14,7 @@ import Prelude hiding (head, last, tail)
 {-@ type AtLeastTree a X = Tree (AtLeast a X) @-}
 {-@ type NEList a = {xs:[a] | 0 < len xs} @-}
 {-@ type NEHeap a = {h:Heap a | 0 < len (unheap h)} @-}
+{-@ type IncrList a = [a]<{\xi xj -> xi <= xj}> @-}
 
 {-@ measure treeListSize @-}
 {-@ treeListSize :: xs:[Tree a] -> {v:Nat | (len xs <= v) && (v = 0 <=> len xs = 0)} @-}
@@ -38,6 +39,10 @@ data Tree a =
         , size :: Int
         }
     deriving (Eq)
+
+
+instance (Eq a, Ord a) => Eq (Heap a) where
+  h1 == h2 = heapSort h1 == heapSort h2
 
 {-@ measure treeElts @-}
 {-@ treeElts :: t:Tree a -> {v:B.Bag a | v = B.put (root t) (treeListElts (subtrees t))} @-}
@@ -110,6 +115,7 @@ listElts (x : xs) = B.union (B.put x B.empty) (listElts xs)
 {-@ predicate TEltsSize T X Y = (treeElts T = X && size T = Y )@-}
 {-@ predicate HEltsSize H X Y = (heapElts H = X && heapSize H = Y) @-}
 {-@ predicate TsEltsSize Ts X Y = (treeListElts Ts = X && treeListSize Ts = Y) @-}
+{-@ predicate LEltsSize H X Y = (listElts H = X && len H = Y) @-}
 
 {-@ treeAtLeastRoot :: t:Tree a ->
   {v:AtLeastTree a (root t) | TEltsSize v (treeElts t) (size t)
@@ -264,7 +270,6 @@ reverseHeapListAux (t:ts) acc = reverseHeapListAux ts (t:acc)
 --     recur
   
 
-
 {-@ deleteMin2 :: h:NEHeap a ->
   {v:(a, Heap {x:a | (fst v) <= x}) |
     B.union (B.put (fst v) B.empty) (heapElts (snd v)) = heapElts h &&
@@ -299,3 +304,31 @@ merge' ts1@(t1:ts1') ts2@(t2:ts2')
   | rank t1 < rank t2 = t1 : merge' ts1' ts2
   | rank t2 < rank t1 = t2 : merge' ts1 ts2'
   | otherwise         = insert' (link t1 t2) (merge' ts1' ts2')
+
+
+----------------------------------------------------------------
+-- Basic operations
+----------------------------------------------------------------
+
+{-@ heapSort :: h:Heap a -> {v:IncrList a | LEltsSize v (heapElts h) (heapSize h)} / [heapSize h] @-}
+heapSort :: Ord a => Heap a -> [a]
+heapSort (Heap []) = []
+heapSort h@(Heap (_:_)) =
+  let (minElt, h') = deleteMin2 h in
+  minElt : heapSort h'
+
+{-@ sortUsingHeap :: xs:[a] -> {v:IncrList a | LEltsSize v (listElts xs) (len xs)} @-}
+sortUsingHeap :: Ord a => [a] -> [a]
+sortUsingHeap = heapSort . fromList
+
+{-| Checking validity of a heap. -}
+{-@ valid :: Heap a -> TT @-}
+valid :: Ord a => Heap a -> Bool
+valid t = isOrdered (heapSort t)
+
+{-@ isOrdered :: IncrList a -> TT @-}
+isOrdered :: Ord a => [a] -> Bool
+isOrdered [] = True
+isOrdered [_] = True
+isOrdered (x:y:xys) = x <= y && isOrdered (y:xys)
+
