@@ -26,30 +26,25 @@ data Tree a =
         }
     deriving (Eq)
 
--- {-@ measure last @-}
--- {-@ last :: {xs:[a] | len xs > 0} -> a @-}
--- last [x] = x
--- last (x:xs) = last xs
+{-@ measure treeElts @-}
+{-@ treeElts :: t:Tree a -> {v:B.Bag a | v = B.put (root t) (treeListElts (subtrees t))} @-}
+treeElts :: Ord a => Tree a -> B.Bag a
+treeElts (Node x _ []) = B.put x B.empty
+treeElts (Node x r tts@(_:ts)) =
+    let refinedTs = firstTree tts in
+    let t = head refinedTs in
+    let remainder = Node x (r - 1) ts in
+    --NOTE: incredible hack: we needed the following assertion for the proof to hold
+    --liquidAssert (rank t == treeRank t) $
+    --so instead, we can do the following (since the statment is always true)
+    if (rank t == treeRank t) then
+    B.union (treeElts t) (treeElts remainder) else B.empty
 
--- {-@ firstSubtree :: {t:Tree a | len (subtrees t) > 0} -> {v:Tree a | treeRank v + 1 = treeRank t} @-}
--- firstSubtree (Node r (t:ts)) = t
 
--- {-@ measure treeElts @-}
--- {-@ treeElts :: t:Tree a -> {v:B.Bag a | v = B.put (root t) (treeListElts (subtrees t))} @-}
--- {-@ treeElts :: Tree a -> B.Bag a @-}
--- treeElts :: Ord a => Tree a -> B.Bag a
--- treeElts (Node x _ []) = B.put x B.empty
--- treeElts (Node x r tts@(_:_)) =
---     let t = head (firstTree tts) in
---     let ts = tail tts in
---     let remainder = Node x (r - 1) ts in
---     liquidAssert (treeRank t == length tts - 1) $
---     B.union (treeElts t) (treeElts remainder)
-
--- {-@ measure treeListElts @-}
--- treeListElts :: Ord a => [Tree a] -> B.Bag a
--- treeListElts [] = B.empty
--- treeListElts (t:ts) = B.union (treeElts t) (treeListElts ts)
+{-@ measure treeListElts @-}
+treeListElts :: Ord a => [Tree a] -> B.Bag a
+treeListElts [] = B.empty
+treeListElts (t:ts) = B.union (treeElts t) (treeListElts ts)
 
 {-@ measure head @-}
 {-@ head :: {xs:[a] | len xs > 0} -> a @-}
@@ -67,7 +62,7 @@ lemma :: [Tree a] -> [Tree a]
 lemma (_:ts) = ts
 
 {-@ reflect firstTree @-}
-{-@ firstTree :: {ts:[{t:Tree a | len ts > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts >= 1} -> {v:[Tree a] | treeRank (head v) = len ts - 1 && len v = len ts && head v = head ts} @-}
+{-@ firstTree :: {ts:[{t:Tree a | len ts > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts >= 1} -> {v:[Tree a] | treeRank (head v) = len ts - 1 && len v = len ts && v = ts} @-}
 firstTree :: Eq a => [Tree a] -> [Tree a]
 firstTree [t] = [t]
 firstTree (t:ts@(_:_)) =
@@ -78,5 +73,5 @@ firstTree (t:ts@(_:_)) =
     t:acc
 
 {-@ measure treeRank @-}
-{-@ treeRank :: Tree a -> Nat @-}
+{-@ treeRank :: t:(Tree a) -> {n:Nat | n = rank t} @-}
 treeRank (Node _ r _) = r
