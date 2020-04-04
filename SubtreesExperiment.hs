@@ -74,7 +74,7 @@ lemma (_:ts) = ts
 
 {-@ reflect firstTree @-}
 {-@ firstTree :: {ts:[{t:Tree a | len ts > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts >= 1} -> {v:[Tree a] | treeRank (head v) = len ts - 1 && len v = len ts && v = ts} @-}
-firstTree :: Eq a => [Tree a] -> [Tree a]
+firstTree ::  [Tree a] -> [Tree a]
 firstTree [t] = [t]
 firstTree (t:ts@(_:_)) =
     let refinedTs = lemma (t:ts) in
@@ -168,3 +168,36 @@ insert' t ts@(t':ts')
   {v:Heap a | HEltsSize v (B.union (B.put x B.empty) (heapElts h)) (1 + heapSize h)} @-}
 insert :: Ord a => a -> Heap a -> Heap a
 insert x (Heap ts) = Heap (insert' (Node x 0 [] 1) ts)
+
+{-@ fromList :: xs:[a] -> {v:Heap a | HEltsSize v (listElts xs) (len xs)} @-}
+fromList :: Ord a => [a] -> Heap a
+fromList [] = empty
+fromList (x:xs) = insert x (fromList xs)
+
+--- toList
+
+{-@ toList :: h:Heap a -> {v:[a] | listElts v = heapElts h && len v = heapSize h} @-}
+toList :: Heap a -> [a]
+toList (Heap ts) = treeListToList ts
+
+{-@ appendPreservingListElts :: xs:[a] -> ys:[a] -> {v:[a] | listElts v = B.union (listElts xs) (listElts ys) && len v = len xs + len ys} @-}
+appendPreservingListElts :: [a] -> [a] -> [a]
+appendPreservingListElts [] ys = ys
+appendPreservingListElts (x:xs) ys = x : appendPreservingListElts xs ys
+
+{-@ treeListToList :: ts:[Tree a] -> {v:[a] | listElts v = treeListElts ts && len v = treeListSize ts} @-}
+treeListToList :: [Tree a] -> [a]
+treeListToList [] = []
+treeListToList (t:ts) = appendPreservingListElts (treeToList t) (treeListToList ts)
+
+{-@ treeToList :: t:Tree a -> {v:[a] | listElts v = treeElts t && len v = size t} @-}
+treeToList :: Tree a -> [a]
+treeToList (Node x _ [] _) = [x]
+treeToList (Node x r tts@(_:ts) sz) =
+    let refinedTs = firstTree tts in
+    let t = head refinedTs in
+    let remainder = Node x (r - 1) ts (sz - (size t)) in
+    --just like treeElts, need this
+    liquidAssert (rank t == treeRank t) $
+    appendPreservingListElts (treeToList t) (treeToList remainder)
+
