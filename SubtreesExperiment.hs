@@ -5,7 +5,6 @@
 
 module SubtreesExperiment where
 
-import Language.Haskell.Liquid.Prelude (liquidAssert)
 import qualified Language.Haskell.Liquid.Bag as B
 
 import Prelude hiding (head, last, tail)
@@ -22,13 +21,19 @@ treeListSize :: [Tree a] -> Int
 treeListSize [] = 0
 treeListSize (x:xs) = size x + treeListSize xs
 
+{-@ reflect pow2 @-}
+{-@ pow2 :: Nat -> Pos @-}
+pow2 :: Int -> Int
+pow2 0 = 1
+pow2 n = let acc = pow2 (n - 1) in acc + acc
+
 {-@
 data Tree [rank] a =
     Node
         { root :: a
         , rank :: Nat
         , subtrees :: {ts:[{t:AtLeastTree a root | rank > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts = rank}
-        , size :: {v:Pos | v = 1 + treeListSize subtrees}
+        , size :: {v:Pos | v = 1 + treeListSize subtrees && v = pow2 rank}
         }
 @-}
 data Tree a =
@@ -44,20 +49,22 @@ data Tree a =
 instance (Eq a, Ord a) => Eq (Heap a) where
   h1 == h2 = heapSort h1 == heapSort h2
 
+{-@ inline assert @-}
+{-@ assert :: TT -> a -> a @-}
+assert :: Bool -> a -> a
+assert _ a = a
+
 {-@ measure treeElts @-}
 {-@ treeElts :: t:Tree a -> {v:B.Bag a | v = B.put (root t) (treeListElts (subtrees t))} @-}
 treeElts :: Ord a => Tree a -> B.Bag a
 treeElts (Node x _ [] _) = B.put x B.empty
 treeElts (Node x r tts@(_:ts) sz) =
-    let refinedTs = firstTree tts in
-    let t = head refinedTs in
+    let t = firstTree tts in
+    assert (treeRank t == r - 1) $
+    assert (sz == pow2 r) $
+    assert (sz == pow2 (r - 1) + pow2 (r - 1)) $
     let remainder = Node x (r - 1) ts (sz - (size t)) in
-    --NOTE: incredible hack: we needed the following assertion for the proof to hold
-    --liquidAssert (rank t == treeRank t) $
-    --so instead, we can do the following (since the statment is always true)
-    if (rank t == treeRank t) then
-    B.union (treeElts t) (treeElts remainder) else B.empty
-
+    B.union (treeElts t) (treeElts remainder)
 
 {-@ measure treeListElts @-}
 treeListElts :: Ord a => [Tree a] -> B.Bag a
@@ -80,15 +87,10 @@ lemma :: [Tree a] -> [Tree a]
 lemma (_:ts) = ts
 
 {-@ reflect firstTree @-}
-{-@ firstTree :: {ts:[{t:Tree a | len ts > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts >= 1} -> {v:[Tree a] | treeRank (head v) = len ts - 1 && len v = len ts && v = ts} @-}
-firstTree ::  [Tree a] -> [Tree a]
-firstTree [t] = [t]
-firstTree (t:ts@(_:_)) =
-    let refinedTs = lemma (t:ts) in
-    let acc = firstTree refinedTs in
-    -- NOTE: if we uncomment this assert, the file no longer verifies...
-    -- liquidAssert (head acc == head refinedTs) $
-    t:acc
+{-@ firstTree :: {ts:[{t:Tree a | len ts > treeRank t}]<{\ti tj -> treeRank ti > treeRank tj}> | len ts >= 1} -> {v:Tree a | treeRank v = len ts - 1 && v = head ts} @-}
+firstTree ::  [Tree a] -> Tree a
+firstTree [t] = t
+firstTree ts@(t:_:_) = firstTree (lemma ts) `seq` t
 
 {-@ measure treeRank @-}
 {-@ treeRank :: t:(Tree a) -> {n:Nat | n = rank t} @-}
@@ -125,19 +127,21 @@ treeAtLeastRoot (Node x r ts sz) = Node x r ts sz
 
 --NOTE: need all 3 of these assertions for the function to verify
 --Link only works on Trees with equal ranks
-{-@ link :: t1:(Tree a) -> {t2:(Tree a) | rank t2 = rank t1} ->
+{-@ link :: t1:Tree a -> {t2:Tree a | rank t2 = rank t1} ->
   {v:Tree a | TEltsSize v (B.union (treeElts t1) (treeElts t2)) (size t1 + size t2) && rank v = rank t1 + 1}
 @-}
 link :: Ord a => Tree a -> Tree a -> Tree a
 link t1@(Node x1 r1 ts1 sz1) t2@(Node x2 r2 ts2 sz2)
   | x1 <= x2  =
-        let new =  Node x1 (r1 + 1) ((treeAtLeastRoot t2):ts1) (sz1 + sz2) in
-      liquidAssert (treeElts new == B.union (treeElts t1) (treeElts t2)) $
-         new
-  | otherwise = let new =  Node x2 (r2 + 1) ((treeAtLeastRoot t1):ts2) (sz1 + sz2) in
-      liquidAssert (r2 == r1) $
-      liquidAssert (treeElts new == B.union (treeElts t1) (treeElts t2)) $
-         new
+      assert (sz1 + sz1 == pow2 (r1 + 1)) $
+      let new = Node x1 (r1 + 1) ((treeAtLeastRoot t2):ts1) (sz1 + sz2) in
+      assert (treeElts new == B.union (treeElts t1) (treeElts t2)) $
+      new
+  | otherwise =
+      assert (sz2 + sz2 == pow2 (r2 + 1)) $
+      let new = Node x2 (r2 + 1) ((treeAtLeastRoot t1):ts2) (sz1 + sz2) in
+      assert (treeElts new == B.union (treeElts t1) (treeElts t2)) $
+      new
 
 -- simple functions
 
@@ -158,7 +162,9 @@ null h = heapSize h == 0
 
 {-@ singleton :: x:a -> {v:Heap a | HEltsSize v (B.put x B.empty) 1} @-}
 singleton :: Ord a => a -> Heap a
-singleton x = Heap [Node x 0 [] 1]
+singleton x =
+  assert (pow2 0 == 1) $
+  Heap [Node x 0 [] 1]
 
 --Insert
 --NOTE: the insert' function we looked at was wrong - we should only ever be calling link on trees of equal rank
@@ -175,7 +181,9 @@ insert' t ts@(t':ts')
 {-@ insert :: x:a -> h:Heap a ->
   {v:Heap a | HEltsSize v (B.union (B.put x B.empty) (heapElts h)) (1 + heapSize h)} @-}
 insert :: Ord a => a -> Heap a -> Heap a
-insert x (Heap ts) = Heap (insert' (Node x 0 [] 1) ts)
+insert x (Heap ts) =
+  assert (pow2 0 == 1) $
+  Heap (insert' (Node x 0 [] 1) ts)
 
 {-@ fromList :: xs:[a] -> {v:Heap a | HEltsSize v (listElts xs) (len xs)} @-}
 fromList :: Ord a => [a] -> Heap a
@@ -202,12 +210,12 @@ treeListToList (t:ts) = appendPreservingListElts (treeToList t) (treeListToList 
 treeToList :: Tree a -> [a]
 treeToList (Node x _ [] _) = [x]
 treeToList (Node x r tts@(_:ts) sz) =
-    let refinedTs = firstTree tts in
-    let t = head refinedTs in
-    let remainder = Node x (r - 1) ts (sz - (size t)) in
-    --just like treeElts, need this
-    liquidAssert (rank t == treeRank t) $
-    appendPreservingListElts (treeToList t) (treeToList remainder)
+  let t = firstTree tts in
+  assert (treeRank t == r - 1) $
+  assert (sz == pow2 r) $
+  assert (sz == pow2 (r - 1) + pow2 (r - 1)) $
+  let remainder = Node x (r - 1) ts (sz - (size t)) in
+  appendPreservingListElts (treeToList t) (treeToList remainder)
 
 --deleteMin
 
@@ -233,11 +241,11 @@ unheapNonempty (Heap ts@(_:_)) = ts
 subtreeEltsAreEltsOfTree :: Tree a -> [Tree a]
 subtreeEltsAreEltsOfTree (Node _ _ [] _) = []
 subtreeEltsAreEltsOfTree (Node x r tts@(_:ts) sz) =
-    let refinedTs = firstTree tts in
-    let t = head refinedTs in
+    let t = firstTree tts in
+    assert (treeRank t == r - 1) $
+    assert (sz == pow2 r) $
+    assert (sz == pow2 (r - 1) + pow2 (r - 1)) $
     let remainder = Node x (r - 1) ts (sz - (size t)) in
-    --just like treeElts, need this
-    liquidAssert (rank t == treeRank t) $
     t : subtreeEltsAreEltsOfTree remainder
 
 {-@ reverseHeapList :: ts:[Tree a] -> {v:[Tree a] | TsEltsSize v (treeListElts ts) (treeListSize ts)} @-}
@@ -262,13 +270,13 @@ reverseHeapListAux (t:ts) acc = reverseHeapListAux ts (t:acc)
 --     let t = head refinedTs in
 --     let remainder = Node x (r - 1) ts (sz - (size t)) in
 --     --just like treeElts, need this
---     liquidAssert (rank t == treeRank t) $
---     liquidAssert (root remainder == x) $
---     liquidAssert (treeElts (Node x r tts sz) == B.union (treeElts t)(treeElts remainder) ) $
+--     assert (rank t == treeRank t) $
+--     assert (root remainder == x) $
+--     assert (treeElts (Node x r tts sz) == B.union (treeElts t)(treeElts remainder) ) $
 --     let recur = rootIsEltOfTree remainder in
---     liquidAssert (B.get x (treeElts (remainder)) > 0) $
+--     assert (B.get x (treeElts (remainder)) > 0) $
 --     recur
-  
+
 
 {-@ deleteMin2 :: h:NEHeap a ->
   {v:(a, Heap {x:a | (fst v) <= x}) |
@@ -331,4 +339,3 @@ isOrdered :: Ord a => [a] -> Bool
 isOrdered [] = True
 isOrdered [_] = True
 isOrdered (x:y:xys) = x <= y && isOrdered (y:xys)
-
