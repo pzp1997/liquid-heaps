@@ -120,8 +120,7 @@ listElts (x : xs) = B.union (B.put x B.empty) (listElts xs)
 {-@ predicate LEltsSize H X Y = (listElts H = X && len H = Y) @-}
 
 {-@ treeAtLeastRoot :: t:Tree a ->
-  {v:AtLeastTree a (root t) | TEltsSize v (treeElts t) (size t)
-                           && root v = root t && rank v = rank t && v = t} @-}
+  {v:AtLeastTree a (root t) |  v = t} @-}
 treeAtLeastRoot :: Tree a -> Tree a
 treeAtLeastRoot (Node x r ts sz) = Node x r ts sz
 
