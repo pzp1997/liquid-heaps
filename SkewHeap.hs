@@ -1,4 +1,4 @@
-module Data.Heap.Skew
+module SkewHeap
     ( size
     , elts
     , empty
@@ -13,7 +13,6 @@ module Data.Heap.Skew
     )
 where
 
-import Prelude hiding (minimum, maximum, null)
 import qualified Language.Haskell.Liquid.Bag as Bag
 import Language.Haskell.Liquid.Bag (Bag)
 
@@ -56,12 +55,14 @@ size (Node _ l r) = 1 + size l + size r
 empty :: Skew a
 empty = Leaf
 
-{- See if the heap is empty.-}
+{-| See if the heap is empty. -}
 
 {-@ null :: s:Skew t -> {b:Bool | b <=> size s = 0} @-}
 null :: Skew t -> Bool
 null Leaf         = True
 null (Node _ _ _) = False
+
+{-| Equality of heaps is determined by their elements -}
 
 instance Ord a => Eq (Skew a) where
   h1 == h2 = toSortedList h1 == toSortedList h2
